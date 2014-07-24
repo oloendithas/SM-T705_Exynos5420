@@ -83,6 +83,7 @@ static enum power_supply_property sec_battery_props[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_AVG,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CURRENT_AVG,
+	POWER_SUPPLY_PROP_CURRENT_MAX,
 	POWER_SUPPLY_PROP_CHARGE_NOW,
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_TEMP,
@@ -1568,6 +1569,20 @@ static void sec_bat_get_battery_info(
 		POWER_SUPPLY_PROP_VOLTAGE_AVG, value);
 	battery->voltage_ocv = value.intval;
 
+	/* All current limits in charger */
+	
+	psy_do_property("sec-charger", get,
+	POWER_SUPPLY_PROP_CURRENT_AVG, value);
+	battery->current_avg = value.intval;
+	
+	psy_do_property("sec-charger", get,
+	POWER_SUPPLY_PROP_CURRENT_NOW, value);
+	battery->current_now = value.intval;
+	
+	psy_do_property("sec-charger", get,
+	POWER_SUPPLY_PROP_CURRENT_MAX, value);
+	battery->current_max = value.intval;
+	
 	value.intval = SEC_BATTEY_CURRENT_MA;
 	psy_do_property("sec-fuelgauge", get,
 		POWER_SUPPLY_PROP_CURRENT_NOW, value);
@@ -2651,7 +2666,7 @@ ssize_t sec_bat_store_attrs(
 			ret = count;
 		}
 		break;
-
+/*
 #if defined(CONFIG_SAMSUNG_BATTERY_ENG_TEST)
 	case BATT_TEST_CHARGE_CURRENT:
 		if (sscanf(buf, "%d\n", &x) == 1) {
@@ -2679,6 +2694,7 @@ ssize_t sec_bat_store_attrs(
 		}
 		break;
 #endif
+*/
 	default:
 		ret = -EINVAL;
 	}
@@ -2914,6 +2930,9 @@ static int sec_bat_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
 		val->intval = battery->current_avg;
+		break;
+	case POWER_SUPPLY_PROP_CURRENT_MAX:
+		val->intval = battery->current_max;
 		break;
 	/* charging mode (differ from power supply) */
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
