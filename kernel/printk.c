@@ -870,7 +870,7 @@ asmlinkage int printk(const char *fmt, ...)
 	// if printk mode is disabled, terminate instantly
 	if (printk_mode == 0)
 	{
-		return 0;
+		return 1;
 	}
 	
 #ifdef CONFIG_KGDB_KDB
@@ -973,7 +973,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	// if printk mode is disabled, terminate instantly
 	if (printk_mode == 0)
 	{
-		return 0;
+		return 1;
 	}
 	
 	boot_delay_msec();
