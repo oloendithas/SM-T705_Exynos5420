@@ -233,13 +233,20 @@ static void dw_mci_qos_get(struct dw_mci *host)
 	if (delayed_work_pending(&host->qos_work))
 		cancel_delayed_work_sync(&host->qos_work);
 
-	qos_value = pm_qos_request(PM_QOS_DEVICE_THROUGHPUT);
+	if (host->pdata->int_camera) {
+		qos_value = pm_qos_request(PM_QOS_DEVICE_THROUGHPUT);
 
-	if (qos_value <= host->pdata->qos_int_level)
+		if (host->pdata->int_camera <= qos_value)
+			qos_value = host->pdata->int_camera;
+		else
+			qos_value = host->pdata->qos_int_level;
+
+		if (host->pdata->tuned &&
+				(host->pdata->io_mode == MMC_TIMING_MMC_HS200_DDR))
+			dw_mci_runtime_timing_change(host, qos_value);
+	} else
 		qos_value = host->pdata->qos_int_level;
 
-	if (host->pdata->tuned && (host->pdata->io_mode == MMC_TIMING_MMC_HS200_DDR))
-		dw_mci_runtime_timing_change(host, qos_value);
 	pm_qos_update_request(&host->pm_qos_int, qos_value);
 }
 
@@ -1772,21 +1779,19 @@ void dw_mci_runtime_timing_change(struct dw_mci *host, unsigned int qos_level)
 {
 	u8 sample;
 
-	if (host->pdata->int_camera) {
-		if (qos_level >= host->pdata->int_camera) {
-			if (host->pdata->is_fine_tuned)
-				dw_mci_set_fine_tuning_bit(host, false);
-			else {
-				sample = host->pdata->clk_smpl;
-				sample -= 1;
-				dw_mci_set_sampling(host, sample);
-				dw_mci_set_fine_tuning_bit(host, true);
-			}
-		} else {
-			dw_mci_set_fine_tuning_bit(host,
-				host->pdata->is_fine_tuned);
-			dw_mci_set_sampling(host, host->pdata->clk_smpl);
+	if (qos_level >= host->pdata->int_camera) {
+		if (host->pdata->is_fine_tuned)
+			dw_mci_set_fine_tuning_bit(host, false);
+		else {
+			sample = host->pdata->clk_smpl;
+			sample -= 1;
+			dw_mci_set_sampling(host, sample);
+			dw_mci_set_fine_tuning_bit(host, true);
 		}
+	} else {
+		dw_mci_set_fine_tuning_bit(host,
+			host->pdata->is_fine_tuned);
+		dw_mci_set_sampling(host, host->pdata->clk_smpl);
 	}
 }
 

@@ -58,7 +58,7 @@
 #define	SEC_MODULE_NAME "Samsung_URL_Filter"
 //  MACRO FUNCTION START
 #define SEC_FREE(x)                         if((x)!=NULL){kfree(x);(x)=NULL;}
-#define	USE_ATOMIC
+//#define	USE_ATOMIC
 #ifdef USE_ATOMIC
 #define SEC_MALLOC(x)                       kzalloc((x),(in_atomic()==0)?GFP_KERNEL:GFP_ATOMIC)
 #define SEC_spin_lock_irqsave(x, y)         spin_lock_irqsave((x), (y))

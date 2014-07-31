@@ -208,9 +208,6 @@ static struct dw_mci_board universal5420_dwmci0_pdata __initdata = {
 		.pin			= EXYNOS5420_GPC0(0),
 		.val			= S5P_GPIO_DRVSTR_LV3,
 	},
-#if defined(CONFIG_CHAGALL) || defined(CONFIG_KLIMT)
-	.int_camera		= 500 * 1000,
-#endif
 #if !defined(CONFIG_SUPPORT_WQXGA)
 	.qos_int_level		= 111 * 1000,
 #else

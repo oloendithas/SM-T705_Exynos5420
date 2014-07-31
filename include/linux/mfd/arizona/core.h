@@ -95,6 +95,7 @@ struct arizona {
 
 	struct arizona_pdata pdata;
 
+	unsigned int irq_sem;
 	int irq;
 	int virq[2];
 	struct regmap_irq_chip_data *aod_irq_chip;

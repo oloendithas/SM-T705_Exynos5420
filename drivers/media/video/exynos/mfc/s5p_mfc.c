@@ -860,7 +860,7 @@ static void s5p_mfc_handle_frame_error(struct s5p_mfc_ctx *ctx,
 
 	mfc_debug(2, "Assesing whether this context should be run again.\n");
 	/* This context state is always RUNNING */
-	if (ctx->src_queue_cnt == 0 || ctx->dst_queue_cnt < ctx->dpb_count) {
+	if (!s5p_mfc_dec_ctx_ready(ctx)) {
 		mfc_debug(2, "No need to run again.\n");
 		clear_work_bit(ctx);
 	}
@@ -901,10 +901,33 @@ static void s5p_mfc_handle_ref_frame(struct s5p_mfc_ctx *ctx)
 
 		list_add_tail(&dec_buf->list, &dec->ref_queue);
 		dec->ref_queue_cnt++;
-	} else {
-		mfc_debug(2, "Can't find buffer for addr = 0x%x\n", dec_addr);
-		mfc_debug(2, "Expected addr = 0x%x, used = %d\n",
-						buf_addr, dec_buf->used);
+	} else if (is_h264(ctx)) {
+		int found = 0;
+
+		/* Try to search decoded address in whole dst queue */
+		list_for_each_entry(dec_buf, &ctx->dst_queue, list) {
+			buf_addr = s5p_mfc_mem_plane_addr(ctx, &dec_buf->vb, 0);
+			if ((buf_addr == dec_addr) && (dec_buf->used == 1)) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (found) {
+			buf_addr = s5p_mfc_mem_plane_addr(ctx, &dec_buf->vb, 0);
+			mfc_debug(2, "Found in dst queue = 0x%x, buf = 0x%x\n",
+							dec_addr, buf_addr);
+
+			list_del(&dec_buf->list);
+			ctx->dst_queue_cnt--;
+
+			list_add_tail(&dec_buf->list, &dec->ref_queue);
+			dec->ref_queue_cnt++;
+		} else {
+			mfc_debug(2, "Can't find buffer for addr = 0x%x\n", dec_addr);
+			mfc_debug(2, "Expected addr = 0x%x, used = %d\n",
+					buf_addr, dec_buf->used);
+		}
 	}
 }
 
