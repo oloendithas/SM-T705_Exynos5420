@@ -92,6 +92,8 @@ void cdc_ncm_unbind(struct if_usb_devdata *devdata, struct usb_interface *intf);
 struct sk_buff *cdc_ncm_tx_fixup(struct if_usb_devdata *devdata,
 		struct sk_buff *skb, gfp_t flags);
 int cdc_ncm_rx_fixup(struct if_usb_devdata *devdata, struct sk_buff *skb_in);
+int cdc_ncm_rx_fixup_copyskb(struct if_usb_devdata *devdata,
+							struct sk_buff *skb_in);
 
 void cdc_ncm_intr_complete(struct urb *urb);
 

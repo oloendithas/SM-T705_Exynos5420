@@ -218,6 +218,7 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 	buffer->dev = dev;
 	buffer->size = len;
 	INIT_LIST_HEAD(&buffer->vmas);
+	INIT_LIST_HEAD(&buffer->iovas);
 	mutex_init(&buffer->lock);
 	/* this will set up dma addresses for the sglist -- it is not
 	   technically correct as per the dma api -- a specific
@@ -247,13 +248,16 @@ static void ion_buffer_kmap_put(struct ion_buffer *buffer);
 
 static void _ion_buffer_destroy(struct ion_buffer *buffer)
 {
-	int i;
+	struct ion_iovm_map *iovm_map;
+	struct ion_iovm_map *tmp;
+
 	if (WARN_ON(buffer->kmap_cnt > 0))
 		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
-	for (i = 0; i < IOVMM_MAX_NUM_ID; i++)
-		if (buffer->dma_address[i] != 0)
-			iovmm_unmap(buffer->dev->special_dev,
-				    buffer->dma_address[i]);
+	list_for_each_entry_safe(iovm_map, tmp, &buffer->iovas, list) {
+		iovmm_unmap(iovm_map->dev, iovm_map->iova);
+		list_del(&iovm_map->list);
+		kfree(iovm_map);
+	}
 	buffer->heap->ops->unmap_dma(buffer->heap, buffer);
 	buffer->heap->ops->free(buffer);
 	if (buffer->flags & ION_FLAG_CACHED)
@@ -1781,51 +1785,88 @@ void __init ion_reserve(struct ion_platform_data *data)
 	}
 }
 
-int ion_register_special_device(struct ion_device *dev, struct device *special)
+static struct ion_iovm_map *ion_buffer_iova_create(struct ion_buffer *buffer,
+			struct device *dev, enum dma_data_direction dir, int id)
 {
-	down_write(&dev->lock);
-	if (dev->special_dev) {
-		up_write(&dev->lock);
-		return -EBUSY;
+	/* Must be called under buffer->lock held */
+	struct ion_iovm_map *iovm_map;
+
+	iovm_map = kzalloc(sizeof(struct ion_iovm_map), GFP_KERNEL);
+	if (!iovm_map) {
+		pr_err("%s: Failed to allocate ion_iovm_map for %s\n",
+			__func__, dev_name(dev));
+		return ERR_PTR(-ENOMEM);
 	}
 
-	dev->special_dev = special;
+	iovm_map->iova = iovmm_map(dev, buffer->sg_table->sgl, 0, buffer->size,
+					dir, id);
+	if (IS_ERR_VALUE(iovm_map->iova)) {
+		kfree(iovm_map);
+		pr_err("%s: Unable to allocate IOVA for %s\n",
+			__func__, dev_name(dev));
+		return ERR_PTR(iovm_map->iova);
+	}
 
-	up_write(&dev->lock);
+	iovm_map->region_id = id;
+	iovm_map->dev = dev;
+	iovm_map->map_cnt = 1;
 
-	return 0;
+	return iovm_map;
 }
 
 dma_addr_t ion_iovmm_map(struct dma_buf_attachment *attachment,
-		     off_t offset, size_t size,
-		     enum dma_data_direction direction, int id)
+			 off_t offset, size_t size,
+			 enum dma_data_direction direction, int id)
 {
 	struct dma_buf *dmabuf = attachment->dmabuf;
 	struct ion_buffer *buffer = dmabuf->priv;
+	struct ion_iovm_map *iovm_map;
 
-	if ((id < 0) || (id >= IOVMM_MAX_NUM_ID)) {
-		pr_err("%s: Invalid IOVMM ID %d\n", __func__, id);
-		return -EINVAL;
-	}
+	BUG_ON(dmabuf->ops != &dma_buf_ops);
 
-	if (attachment->dev == buffer->dev->special_dev) {
-		mutex_lock(&buffer->lock);
-		if (buffer->dma_address[id] == 0) {
-			buffer->dma_address[id] = iovmm_map(attachment->dev,
-					buffer->sg_table->sgl, 0, buffer->size,
-					direction, id);
-			if (IS_ERR_VALUE(buffer->dma_address[id])) {
-				dma_addr_t ret = buffer->dma_address[id];
-				buffer->dma_address[id] = 0;
-				mutex_unlock(&buffer->lock);
-				return ret;
-			}
+	mutex_lock(&buffer->lock);
+	list_for_each_entry(iovm_map, &buffer->iovas, list) {
+		if ((attachment->dev == iovm_map->dev) &&
+				(id == iovm_map->region_id)) {
+			iovm_map->map_cnt++;
+			mutex_unlock(&buffer->lock);
+			return iovm_map->iova;
 		}
-		mutex_unlock(&buffer->lock);
-	} else {
-		return -EINVAL;
 	}
 
-	return buffer->dma_address[id];
+	iovm_map = ion_buffer_iova_create(buffer, attachment->dev, direction, id);
+	if (IS_ERR(iovm_map)) {
+		mutex_unlock(&buffer->lock);
+		return PTR_ERR(iovm_map);
+	}
 
+	list_add_tail(&iovm_map->list, &buffer->iovas);
+	mutex_unlock(&buffer->lock);
+
+	return iovm_map->iova;
+}
+
+void ion_iovmm_unmap(struct dma_buf_attachment *attachment, dma_addr_t iova)
+{
+	struct ion_iovm_map *iovm_map;
+	struct dma_buf * dmabuf = attachment->dmabuf;
+	struct device *dev = attachment->dev;
+	struct ion_buffer *buffer = attachment->dmabuf->priv;
+
+	BUG_ON(dmabuf->ops != &dma_buf_ops);
+
+	mutex_lock(&buffer->lock);
+	list_for_each_entry(iovm_map, &buffer->iovas, list) {
+		if ((dev == iovm_map->dev) && (iova == iovm_map->iova)) {
+			if (WARN_ON(iovm_map->map_cnt-- == 0))
+				iovm_map->map_cnt = 0;
+			mutex_unlock(&buffer->lock);
+			return;
+		}
+	}
+
+	pr_warn("%s: IOVA %x is not found for %s\n",
+		__func__, iova, dev_name(dev));
+
+	mutex_unlock(&buffer->lock);
 }

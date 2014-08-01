@@ -989,7 +989,7 @@ static int s6e3ha1_ldi_init(struct lcd_info *lcd)
 	/* 2.4 POC setting */
 	s6e3ha1_write(lcd, SEQ_GLOBAL_PARA_33rd, ARRAY_SIZE(SEQ_GLOBAL_PARA_33rd));
 	s6e3ha1_write(lcd, SEQ_POC_SETTING, ARRAY_SIZE(SEQ_POC_SETTING));
-	s6e3ha1_write(lcd, SEQ_SETUP_MARGIN, ARRAY_SIZE(SEQ_SETUP_MARGIN));
+
 
 	/* 3. Brightness Control */
 	/* 4. ELVSS Control */

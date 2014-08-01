@@ -1222,6 +1222,8 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 	int i;
 #endif
 
+	if (dir == DMA_TO_DEVICE)
+		return;
 	if (IS_ERR_OR_NULL(buffer))
 		BUG();
 
@@ -1266,10 +1268,11 @@ void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
 #else
 	bool flush_all = size >= ION_FLUSH_ALL_HIGHLIMIT ? true : false;
 #endif
+	if (dir == DMA_TO_DEVICE)
+		return;
 	pr_debug("%s: syncing for cpu %s, vaddr: %p, size: %d, offset: %ld\n",
 			__func__, dev ? dev_name(dev) : "null",
 			vaddr, size, offset);
-
 	if (flush_all)
 		flush_all_cpu_caches();
 	else if (!IS_ERR_OR_NULL(vaddr))
@@ -1287,6 +1290,8 @@ void exynos_ion_sync_sg_for_cpu(struct device *dev,
 					struct sg_table *sgt,
 					enum dma_data_direction dir)
 {
+	if (dir == DMA_TO_DEVICE)
+		return;
 	ion_device_sync(ion_exynos, sgt, dir, dmac_unmap_area, false);
 }
 EXPORT_SYMBOL(exynos_ion_sync_sg_for_cpu);
