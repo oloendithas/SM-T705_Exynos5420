@@ -125,18 +125,18 @@
 
 #define EXYNOS_GPU_NUMBER	4
 
-#define HOT_NORMAL_TEMP		95
-#define HOT_CRITICAL_TEMP	110
-#define HOT_95			95
-#define HOT_109			104
-#define HOT_110			105
-#define MEM_TH_TEMP1		75
-#define MEM_TH_TEMP2		85
-#define GPU_TH_TEMP1		90
-#define GPU_TH_TEMP2		95
-#define GPU_TH_TEMP3		100
-#define GPU_TH_TEMP4		105
-#define GPU_TH_TEMP5		110
+#define HOT_NORMAL_TEMP 70
+#define HOT_CRITICAL_TEMP 90
+#define HOT_95 95
+#define HOT_109 104
+#define HOT_110 105
+#define MEM_TH_TEMP1 65
+#define MEM_TH_TEMP2 75
+#define GPU_TH_TEMP1 70
+#define GPU_TH_TEMP2 75
+#define GPU_TH_TEMP3 80
+#define GPU_TH_TEMP4 85
+#define GPU_TH_TEMP5 90
 
 #define TYPE_CPU		1
 #define TYPE_GPU		2
