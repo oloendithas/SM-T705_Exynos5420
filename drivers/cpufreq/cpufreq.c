@@ -703,6 +703,7 @@ static struct attribute *default_attrs[] = {
 	&related_cpus.attr,
 	&scaling_governor.attr,
 	&scaling_driver.attr,
+	&cpufreq_freq_attr_scaling_available_freqs.attr,
 	&scaling_available_governors.attr,
 	&scaling_setspeed.attr,
     &UV_mV_table.attr,
