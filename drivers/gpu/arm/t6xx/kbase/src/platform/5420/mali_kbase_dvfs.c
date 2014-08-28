@@ -192,7 +192,7 @@ void hlpr_set_gpu_volt_table(int gpu_table[])
  for (i = 0; i < MALI_DVFS_STEP; i++)
  {
  mali_dvfs_infotbl[i].voltage = gpu_table[u];
- pr_alert("SET GPU VOLTAGE TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].voltage);
+// pr_alert("SET GPU VOLTAGE TABLE %d - %d - %d", i, mali_dvfs_infotbl[i].clock, mali_dvfs_infotbl[i].voltage);
  u++;
  }
 }
@@ -204,7 +204,7 @@ ssize_t hlpr_get_gpu_gov_table(char *buf)
  for (i = dvfs_step_min; i < dvfs_step_max; i++)
  {
  len += sprintf(buf + len, "%d %d\n", mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
- pr_alert("GET GPU GOV TABLE %d - %d - %d - %d", i, k, mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
+// pr_alert("GET GPU GOV TABLE %d - %d - %d - %d", i, k, mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
  k--;
  }
 
@@ -223,7 +223,7 @@ void hlpr_set_gpu_gov_table(int gpu_table[])
  mali_dvfs_infotbl[k].min_threshold = 0;
  else
  mali_dvfs_infotbl[k].min_threshold = gpu_table[u+1];
- pr_alert("SET GPU GOV TABLE %d - %d - %d - %d", i, k, mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
+// pr_alert("SET GPU GOV TABLE %d - %d - %d - %d", i, k, mali_dvfs_infotbl[k].clock, mali_dvfs_infotbl[k].max_threshold);
  k--;
  u++;
  }
