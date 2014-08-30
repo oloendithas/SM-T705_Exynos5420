@@ -427,7 +427,7 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	unsigned int cpuid = smp_processor_id();
 
 	local_irq_disable();
-	sec_debug_task_log_msg(cpuid, "aftr+");
+	//sec_debug_task_log_msg(cpuid, "aftr+");
 #ifdef CONFIG_SEC_PM_DEBUG
 	if (log_en & ENABLE_C3_AFTR)
 		pr_info("+++aftr\n");
@@ -480,7 +480,7 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	if (log_en & ENABLE_C3_AFTR)
 		pr_info("---aftr\n");
 #endif
-	sec_debug_task_log_msg(cpuid, "aftr-");
+	//sec_debug_task_log_msg(cpuid, "aftr-");
 
 	local_irq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
@@ -532,7 +532,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 			       ARRAY_SIZE(exynos5_set_clksrc));
 
 	local_irq_disable();
-	sec_debug_task_log_msg(cpuid, "lpa+");
+	//sec_debug_task_log_msg(cpuid, "lpa+");
 #ifdef CONFIG_SEC_PM_DEBUG
 	if (log_en & ENABLE_C3_LPA)
 		pr_info("+++lpa\n");
@@ -652,7 +652,7 @@ early_wakeup:
 	if (log_en & ENABLE_C3_LPA)
 		pr_info("---lpa\n");
 #endif
-	sec_debug_task_log_msg(cpuid, "lpa-");
+	//sec_debug_task_log_msg(cpuid, "lpa-");
 
 	local_irq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
@@ -785,7 +785,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
 
 	set_boot_flag(cpuid, C2_STATE);
-	sec_debug_task_log_msg(cpuid, "c2+");
+	//sec_debug_task_log_msg(cpuid, "c2+");
 	cpu_pm_enter();
 
 	if (soc_is_exynos5410()) {
@@ -823,10 +823,10 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	__raw_writel(value, EXYNOS5410_ARM_INTR_SPREAD_ENABLE);
 
 	clear_boot_flag(cpuid, C2_STATE);
-	if (ret)
-		sec_debug_task_log_msg(cpuid, "c2_");    /* early wakeup */
-	else
-		sec_debug_task_log_msg(cpuid, "c2-");    /* normal wakeup */
+	//if (ret)
+	//	sec_debug_task_log_msg(cpuid, "c2_");    /* early wakeup */
+	//else
+	//	sec_debug_task_log_msg(cpuid, "c2-");    /* normal wakeup */
 	cpu_pm_exit();
 
 	do_gettimeofday(&after);

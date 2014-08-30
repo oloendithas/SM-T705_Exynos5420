@@ -198,7 +198,7 @@ static int bL_switch_to(unsigned int new_cluster_id)
 		return -ENOSYS;
 
 	pr_debug("before switch: CPU %d in cluster %d\n", cpuid, clusterid);
-	sec_debug_task_log_msg(cpuid, "switch+");
+	//sec_debug_task_log_msg(cpuid, "switch+");
 
 	/* Close the gate for our entry vectors */
 	bL_set_entry_vector(cpuid, ob_cluster, NULL);
@@ -247,7 +247,7 @@ static int bL_switch_to(unsigned int new_cluster_id)
 	cpuid = mpidr & 0xf;
 	clusterid = (mpidr >> 8) & 0xf;
 	pr_debug("after switch: CPU %d in cluster %d\n", cpuid, clusterid);
-	sec_debug_task_log_msg(cpuid, "switch-");
+	//sec_debug_task_log_msg(cpuid, "switch-");
 	BUG_ON(clusterid != ib_cluster);
 
 	bL_platform_ops->inbound_setup(cpuid, !clusterid);
