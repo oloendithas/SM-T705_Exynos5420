@@ -427,7 +427,7 @@ static u64 update_load(int cpu)
 	per_cpu(cpu_util, cpu) = cur_load;
 
 	cur_loadinfo->load = (cur_load * pcpu->policy->cur) /
-                    pcpu->policy->cpuinfo.max_freq;
+                    pcpu->policy->max;
 	cur_loadinfo->freq = pcpu->policy->cur;
 	cur_loadinfo->timestamp = now;
 #endif
@@ -449,11 +449,11 @@ static unsigned int check_mode(int cpu, unsigned int cur_mode, u64 now)
 
 	for_each_online_cpu(i) {
 		cur_loadinfo = &per_cpu(loadinfo, i);
-		if (now - cur_loadinfo->timestamp <= timer_rate) {
+		//if (now - cur_loadinfo->timestamp <= timer_rate) {
 			total_load += cur_loadinfo->load;
 			if (cur_loadinfo->load > max_single_load)
 				max_single_load = cur_loadinfo->load;
-		}
+		//}
 	}
 
 	if (!(cur_mode & SINGLE_MODE)) {
