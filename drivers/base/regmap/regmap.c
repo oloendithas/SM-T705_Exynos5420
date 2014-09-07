@@ -16,7 +16,9 @@
 #include <linux/mutex.h>
 #include <linux/err.h>
 
+#ifdef CONFIG_ARIZONA_CONTROL
 #include <linux/mfd/arizona/control.h>
+#endif
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/regmap.h>
@@ -483,10 +485,12 @@ int _regmap_write(struct regmap *map, unsigned int reg,
 	int ret;
 	BUG_ON(!map->format.format_write && !map->format.format_val);
 
+#ifdef CONFIG_ARIZONA_CONTROL
 	mutex_unlock(&map->lock);
 	arizona_control_regmap_hook(map, reg, &val);
 	mutex_lock(&map->lock);
-	
+#endif
+
 	if (!map->cache_bypass && map->format.format_write) {
 		ret = regcache_write(map, reg, val);
 		if (ret != 0)

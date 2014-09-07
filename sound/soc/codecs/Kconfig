@@ -458,4 +458,9 @@ config SND_SOC_MAX9877
 config SND_SOC_TPA6130A2
 	tristate
 
+config ARIZONA_CONTROL
+	bool "WM5102 sysfs interface"
+	depends on SND_SOC_WM5102
+	default n
+
 source "sound/soc/codecs/ymu831/Kconfig"
