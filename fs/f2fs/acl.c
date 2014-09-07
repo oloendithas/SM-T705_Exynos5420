@@ -262,6 +262,7 @@ int f2fs_init_acl(struct inode *inode, struct inode *dir, struct page *ipage)
 				F2FS_I(inode)->i_advise & FADVISE_ANDROID_EMU))
 #else
 		if (!acl)
+#endif
 			inode->i_mode &= ~current_umask();
 	}
 

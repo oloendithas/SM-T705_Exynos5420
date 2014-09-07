@@ -74,7 +74,7 @@ config F2FS_CHECK_FS
 
 config F2FS_ANDROID_EMULATION_SUPPORT
         bool "F2FS Android sdcard emulation"
-        depends on F2FS_FS
+        depends on F2FS_FS_POSIX_ACL
         help
           Enables Android sdcard emulation support.
 
