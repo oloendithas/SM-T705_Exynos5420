@@ -196,7 +196,7 @@ static mali_error kbase_jd_umm_map(kbase_context *kctx, struct kbase_va_region *
 
 		for (j = 0; (j < pages) && (count < reg->nr_pages); j++, count++)
 			*pa++ = sg_dma_address(s) + (j << PAGE_SHIFT);
-			WARN_ONCE(j < pages, "sg list returned by dma_buf_map_attachment is larger than dma_buf->size=%zu\n", reg->imported_metadata.umm.dma_buf->size);
+			//WARN_ONCE(j < pages, "sg list returned by dma_buf_map_attachment is larger than dma_buf->size=%zu\n", reg->imported_metadata.umm.dma_buf->size);
 	}
 
 	err = kbase_mmu_insert_pages(kctx, reg->start_pfn, kbase_get_phy_pages(reg), reg->nr_alloc_pages, reg->flags | KBASE_REG_GPU_WR | KBASE_REG_GPU_RD);
