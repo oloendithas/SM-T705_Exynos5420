@@ -13,7 +13,7 @@
  * GNU General Public License for more details.
  *
  */
-#define DEBUG
+//#define DEBUG
 
 #include <linux/gpio.h>
 #include <linux/miscdevice.h>
@@ -191,7 +191,7 @@ int usb_linkpm_request_resume(struct usb_device *udev)
 		return 0;
 	}
 
-	mif_info("resume request for TX\n");
+	mif_debug("resume request for TX\n");
 	queue_delayed_work(pmdata->wq, &pmdata->link_pm_work, 0);
 	return 0;
 }
@@ -208,7 +208,7 @@ static void set_slavewake(struct modemlink_pm_data *pm_data, int val)
 		}
 		gpio_set_value(pm_data->gpio_link_slavewake, 1);
 	}
-	mif_info("slave wake(%d)\n",
+	mif_debug("slave wake(%d)\n",
 		gpio_get_value(pm_data->gpio_link_slavewake));
 }
 
@@ -223,7 +223,7 @@ static void xmm626x_gpio_l3tol0_resume(struct xmm626x_linkpm_data *pmdata)
 	}
 
 	gpio_set_value(pmdata->pdata->gpio_link_active, 1);
-	printk(KERN_DEBUG "mif: host active(%d)\n", get_hostactive(pmdata));
+	//printk(KERN_DEBUG "mif: host active(%d)\n", get_hostactive(pmdata));
 	if (pmdata->pdata->wait_cp_resume)
 		pmdata->pdata->wait_cp_resume(pmdata->pdata->port);
 
@@ -487,12 +487,12 @@ static int xmm626x_linkpm_phy_notify(struct notifier_block *nfb,
 	switch (event) {
 	case STATE_HSIC_LPA_ENTER:
 		gpio_set_value(pdata->gpio_link_active, 0);
-		mif_info("lpa enter(%ld): active state(%d)\n",
+		mif_debug("lpa enter(%ld): active state(%d)\n",
 			event, gpio_get_value(pdata->gpio_link_active));
 		break;
 	case STATE_HSIC_PHY_SHUTDOWN:
 		gpio_direction_output(pdata->gpio_link_active, 0);
-		mif_info("phy_exit(%ld): active state(%d)\n",
+		mif_debug("phy_exit(%ld): active state(%d)\n",
 			event, gpio_get_value(pdata->gpio_link_active));
 		break;
 	case STATE_HSIC_CHECK_HOSTWAKE:
@@ -697,13 +697,13 @@ static irqreturn_t xmm626x_linkpm_hostwake(int irq, void *data)
 
 	host_wake = get_hostwake(pmdata);
 	slave_wake = !!gpio_get_value(pmdata->pdata->gpio_link_slavewake);
-	printk(KERN_INFO "mif: host wakeup(%d), slave(%d)\n", host_wake,
-								slave_wake);
+	//printk(KERN_DEBUG "mif: host wakeup(%d), slave(%d)\n", host_wake,
+	//							slave_wake);
 
 	if (slave_wake && !host_wake) {
 		gpio_set_value(pmdata->pdata->gpio_link_slavewake, 0);
-		printk(KERN_DEBUG "mif: slave(%d)\n",
-			gpio_get_value(pmdata->pdata->gpio_link_slavewake));
+		//printk(KERN_DEBUG "mif: slave(%d)\n",
+		//	gpio_get_value(pmdata->pdata->gpio_link_slavewake));
 	}
 
 	/* CP request the resume*/

@@ -19,6 +19,11 @@
  */
 #ifndef _SYNAPTICS_RMI4_H_
 #define _SYNAPTICS_RMI4_H_
+#ifdef DEBUG
+#undef DEBUG
+#endif
+
+#define DEBUG 0
 
 #define SYNAPTICS_RMI4_DRIVER_VERSION "DS5 1.0"
 #include <linux/device.h>

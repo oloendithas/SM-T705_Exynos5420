@@ -319,7 +319,7 @@ static int modem_suspend(struct device *pdev)
 {
 	struct modem_ctl *mc = dev_get_drvdata(pdev);
 
-	mif_info("Enter modem_suspend\n");
+	mif_debug("Enter modem_suspend\n");
 	if (mc->gpio_pda_active && !mc->pda_active_hwctl)
 		gpio_set_value(mc->gpio_pda_active, 0);
 

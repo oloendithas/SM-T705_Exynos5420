@@ -580,7 +580,7 @@ int synaptics_rmi4_access_register(struct synaptics_rmi4_data *rmi4_data,
 			ii++;
 		}
 	}
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s: [%c]0x%04X, length:%d, data: %s\n",
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "%s: [%c]0x%04X, length:%d, data: %s\n",
 		__func__, mode ? 'W' : 'R', address, length, temp);
 
 out:
@@ -602,7 +602,7 @@ static void synaptics_rmi4_release_all_finger(struct synaptics_rmi4_data *rmi4_d
 		input_mt_slot(rmi4_data->input_dev, ii);
 
 		if (rmi4_data->finger[ii].state) {
-			tsp_debug_info(true, &rmi4_data->i2c_client->dev, "[%d][RA] 0x%02x M[%d], Ver[%02X%02X, 0x%02X, 0x%02X/0x%02X/0x%02X]\n",
+			tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "[%d][RA] 0x%02x M[%d], Ver[%02X%02X, 0x%02X, 0x%02X/0x%02X/0x%02X]\n",
 				ii, rmi4_data->finger[ii].state, rmi4_data->finger[ii].mcount,
 				rmi4_data->ic_revision_of_ic, rmi4_data->fw_version_of_ic, rmi4_data->f12.feature_enable,
 #ifdef PROXIMITY_MODE
@@ -987,7 +987,7 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 			if (rmi4_data->finger[finger].state) {
 				rmi4_data->finger[finger].mcount++;
 				if (rmi4_data->finger[finger].state != finger_status)
-					tsp_debug_info(true, &rmi4_data->i2c_client->dev, "[%d][C] 0x%02x T[%d/%u] M[%d]"
+					tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "[%d][C] 0x%02x T[%d/%u] M[%d]"
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 					", x = %d, y = %d, wx = %d, wy = %d\n",	finger, finger_status, tool_type,
 					rmi4_data->use_stylus, rmi4_data->finger[finger].mcount, x, y, wx, wy);
@@ -997,7 +997,7 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 #endif
 			} else {
 				new_finger_pressed = true;
-				tsp_debug_info(true, &rmi4_data->i2c_client->dev, "[%d][P] 0x%02x T[%d/%u]"
+				tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "[%d][P] 0x%02x T[%d/%u]"
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 					", x = %d, y = %d, wx = %d, wy = %d\n",	finger, finger_status, tool_type,
 					rmi4_data->use_stylus, x, y, wx, wy);
@@ -1009,7 +1009,7 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 
 		} else {
 			if (rmi4_data->finger[finger].state) {
-				tsp_debug_info(true, &rmi4_data->i2c_client->dev,
+				tsp_debug_dbg(true, &rmi4_data->i2c_client->dev,
 					"[%d][R] 0x%02x M[%d], Ver[%02X%02X, 0x%02X, 0x%02X/0x%02X/0x%02X]\n",
 					finger, finger_status, rmi4_data->finger[finger].mcount,
 					rmi4_data->ic_revision_of_ic, rmi4_data->fw_version_of_ic, rmi4_data->f12.feature_enable,
@@ -1822,7 +1822,7 @@ static int synaptics_rmi4_f12_set_feature(struct synaptics_rmi4_data *rmi4_data)
 		goto out;
 	}
 
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s: [0x%02X], Set %s\n",
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "%s: [0x%02X], Set %s\n",
 		 __func__, rmi4_data->f12.feature_enable,
 		(rmi4_data->f12.feature_enable == (CLEAR_COVER_MODE_EN | FAST_GLOVE_DECTION_EN)) ? "Clear cover & Fast glove mode" :
 		(rmi4_data->f12.feature_enable == (FLIP_COVER_MODE_EN | FAST_GLOVE_DECTION_EN)) ? "Flip cover & Fast glove mode" :
@@ -2177,7 +2177,7 @@ static int synaptics_rmi4_f12_init(struct synaptics_rmi4_data *rmi4_data,
 		return retval;
 	}
 
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev,
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev,
 			"%s: %02x max_x,y(%d,%d) num_Rx,Tx(%d,%d), num_finger(%d),  node:%d, threshold:%d, gloved sensitivity:%x\n",
 			__func__, fhandler->fn_number,
 			rmi4_data->sensor_max_x, rmi4_data->sensor_max_y,
@@ -2542,7 +2542,7 @@ static int synaptics_rmi4_f51_set_proximity_enables(struct synaptics_rmi4_data *
 	struct synaptics_rmi4_f51_handle *f51 = rmi4_data->f51;
 	int retval;
 
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s: [0x%02X], Hover is %s\n", __func__,
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "%s: [0x%02X], Hover is %s\n", __func__,
 		f51->proximity_enables, (f51->proximity_enables & FINGER_HOVER_EN) ? "enabled" : "disabled");
 
 	retval = synaptics_rmi4_i2c_write(rmi4_data,
@@ -2647,7 +2647,7 @@ static int synaptics_rmi4_f51_set_init(struct synaptics_rmi4_data *rmi4_data)
 	synaptics_rmi4_i2c_read(rmi4_data, f51->general_control_2_addr,
 			&f51->general_control_2, sizeof(f51->general_control_2));
 
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s: General control[0x%02X],2[0x%02X] Hsync is %s\n",
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "%s: General control[0x%02X],2[0x%02X] Hsync is %s\n",
 			__func__, f51->general_control, f51->general_control_2,
 			(f51->general_control & HSYNC_STATUS) ? "GD" : "NG");
 
@@ -3559,7 +3559,7 @@ static int synaptics_rmi4_reinit_device(struct synaptics_rmi4_data *rmi4_data)
 
 	for (ii = 0; ii < rmi4_data->num_of_intr_regs; ii++) {
 		if (rmi4_data->intr_mask[ii] != 0x00) {
-			tsp_debug_info(true, &rmi4_data->i2c_client->dev,
+			tsp_debug_dbg(true, &rmi4_data->i2c_client->dev,
 					"%s: Interrupt enable mask register[%d] = 0x%02x\n",
 					__func__, ii, rmi4_data->intr_mask[ii]);
 			intr_addr = rmi4_data->f01_ctrl_base_addr + 1 + ii;
@@ -4389,7 +4389,7 @@ static void synaptics_rmi4_sensor_sleep(struct synaptics_rmi4_data *rmi4_data)
 
 	rmi4_data->sensor_sleep = true;
 
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s : [F01_CTRL] 0x%02X, [F51_CTRL] 0x%02X/0x%02X/0x%02X]\n",
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "%s : [F01_CTRL] 0x%02X, [F51_CTRL] 0x%02X/0x%02X/0x%02X]\n",
 		__func__, device_ctrl, rmi4_data->f51->proximity_enables, rmi4_data->f51->general_control, rmi4_data->f51->general_control_2);
 
 	msleep(SYNAPTICS_DEEPSLEEP_TIME);
@@ -4457,7 +4457,7 @@ static void synaptics_rmi4_sensor_wake(struct synaptics_rmi4_data *rmi4_data)
 	}
 
 	rmi4_data->sensor_sleep = false;
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s : [F01_CTRL] 0x%02X, [F51_CTRL] 0x%02X/0x%02X/0x%02X]\n",
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "%s : [F01_CTRL] 0x%02X, [F51_CTRL] 0x%02X/0x%02X/0x%02X]\n",
 		__func__, device_ctrl, rmi4_data->f51->proximity_enables, rmi4_data->f51->general_control, rmi4_data->f51->general_control_2);
 out:
 	mutex_unlock(&rmi4_data->rmi4_device_mutex);

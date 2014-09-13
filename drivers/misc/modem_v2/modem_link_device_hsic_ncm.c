@@ -295,7 +295,7 @@ static int submit_anchored_urbs(struct if_usb_devdata *pipe_data)
 		}
 		usb_put_urb(urb);
 	}
-	mif_info("All urbs was submitted\n");
+	mif_debug("All urbs was submitted\n");
 	return 0;
 }
 
@@ -305,7 +305,7 @@ static void kill_anchored_urbs(struct work_struct *work)
 		struct if_usb_devdata, kill_urbs_work.work);
 
 	usb_kill_anchored_urbs(&pipe_data->reading);
-	mif_info("All reading urbs was killed\n");
+	mif_debug("All reading urbs was killed\n");
 }
 
 static void usb_free_urbs(struct usb_link_device *usb_ld,
@@ -418,7 +418,7 @@ static int start_ipc(struct link_device *ld, struct io_device *iod)
 	skbpriv(skb)->iod = iod;
 	skbpriv(skb)->ld = ld;
 
-	mif_info("sending 'a' to start ipc\n");
+	mif_debug("sending 'a' to start ipc\n");
 	ret = usb_tx_skb(pipe_data, skb);
 	if (ret < 0) {
 		mif_err("usb_tx_urb fail\n");
@@ -619,7 +619,7 @@ static void usb_rx_complete(struct urb *urb)
 		/* call iod recv */
 		skb_put(skb, urb->actual_length);
 		if (pipe_data->info->rx_fixup) {
-			pr_rx_skb_with_format(iod->format, skb);
+			//pr_rx_skb_with_format(iod->format, skb);
 			pipe_data->info->rx_fixup(pipe_data, skb);
 			reprocess_skb(pipe_data, skb);
 			goto rx_submit;
@@ -635,7 +635,7 @@ static void usb_rx_complete(struct urb *urb)
 			goto rx_submit;
 		}
 
-		pr_rx_skb_with_format(iod->format, skb);
+		//pr_rx_skb_with_format(iod->format, skb);
 		logging_ipc_data(MIF_IPC_CP2AP, iod, skb);
 		ret = iod->recv_skb(iod, &usb_ld->ld, skb);
 		if (ret < 0) {
@@ -757,7 +757,7 @@ static void usb_tx_complete(struct urb *urb)
 		logging_ipc_data(MIF_IPC_AP2CP, iod, skb);
 		if (pipe_data->txpend_ts.tv_sec) {
 			/* TX flowctl was resumed */
-			mif_info("flowctl %s CH%d(%d) (%02d:%02d:%02d.%09lu)\n",
+			mif_debug("flowctl %s CH%d(%d) (%02d:%02d:%02d.%09lu)\n",
 				"resume", pipe_data->idx, pipe_data->tx_pend,
 				pipe_data->txpend_tm.tm_hour,
 				pipe_data->txpend_tm.tm_min,
@@ -815,7 +815,7 @@ static void usb_tx_complete(struct urb *urb)
 		 * interface resume(if_usb_resume) will be re-submit these urbs.
 		 */
 		usb_anchor_urb(urb, &pipe_data->tx_deferd_urbs);
-		mif_info("TX deferd urbs (%d) EP(%d)\n", urb->status,
+		mif_debug("TX deferd urbs (%d) EP(%d)\n", urb->status,
 						usb_pipeendpoint(urb->pipe));
 	} else {
 		dev_kfree_skb_any(skb);
@@ -867,7 +867,7 @@ int usb_tx_skb(struct if_usb_devdata *pipe_data, struct sk_buff *skb)
 			ret = -EINVAL;
 			goto done;
 		}
-		pr_tx_skb_with_format(pipe_data->iod->format, skb);
+		//pr_tx_skb_with_format(pipe_data->iod->format, skb);
 		skb = pipe_data->info->tx_fixup(pipe_data, skb, mem_flags);
 		if (!skb) {
 			mif_debug("CDC-NCM gathers skbs to NTB\n");
@@ -907,7 +907,7 @@ int usb_tx_skb(struct if_usb_devdata *pipe_data, struct sk_buff *skb)
 	 */
 	if (pipe_data->state == STATE_SUSPENDED
 				|| usb_get_rpm_status(dev) == RPM_SUSPENDING) {
-		mif_info("<%s> Tx pkt will be send after intf resumed\n",
+		mif_debug("<%s> Tx pkt will be send after intf resumed\n",
 				pipe_data->iod->name);
 		usb_anchor_urb(urb, &pipe_data->tx_deferd_urbs);
 		if (pipe_data->ndev)
@@ -922,7 +922,7 @@ int usb_tx_skb(struct if_usb_devdata *pipe_data, struct sk_buff *skb)
 		netif_stop_queue(pipe_data->ndev);
 	spin_unlock_irqrestore(&pipe_data->sk_tx_q.lock, flag);
 
-	pr_tx_skb_with_format(pipe_data->iod->format, skb);
+	//pr_tx_skb_with_format(pipe_data->iod->format, skb);
 	logging_ipc_data(MIF_IPC_RL2AP, pipe_data->iod, skb);
 	ret = usb_submit_urb(urb, mem_flags);
 	if (ret < 0) {
@@ -1076,7 +1076,7 @@ static int if_usb_suspend(struct usb_interface *intf, pm_message_t message)
 	usb_ld->suspended++;
 
 	if (usb_ld->suspended == usb_ld->max_link_ch * 2) {
-		mif_info("suspended resumeby(%d)\n", usb_ld->resumeby);
+		mif_debug("suspended resumeby(%d)\n", usb_ld->resumeby);
 		mif_com_log(pipe_data->iod->msd, "Called %s func\n", __func__);
 		/* Check HSIC interface error for debugging */
 		if (usb_ld->resumeby == HSIC_RESUMEBY_CP && !usb_ld->rx_cnt) {
@@ -1129,7 +1129,7 @@ static int usb_defered_tx_purge_anchor(struct if_usb_devdata *pipe_data)
 	while ((urb = usb_get_from_anchor(&pipe_data->tx_deferd_urbs))) {
 		usb_put_urb(urb);
 		skb = (struct sk_buff *)urb->context;
-		pr_tx_skb_with_format(pipe_data->iod->format, skb);
+		//pr_tx_skb_with_format(pipe_data->iod->format, skb);
 		dev_kfree_skb_any(skb);
 		usb_free_urb(urb);
 		cnt++;
@@ -1162,7 +1162,7 @@ static int usb_defered_tx_from_anchor(struct if_usb_devdata *pipe_data)
 				pipe_data->tx_pipe, skb->data, skb->len,
 				usb_tx_complete, (void *)skb);
 		}
-		pr_tx_skb_with_format(pipe_data->iod->format, skb);
+		//pr_tx_skb_with_format(pipe_data->iod->format, skb);
 		logging_ipc_data(MIF_IPC_RL2AP, pipe_data->iod, skb);
 		ret = usb_submit_urb(urb, GFP_ATOMIC);
 		if (ret < 0) {
@@ -1178,7 +1178,7 @@ static int usb_defered_tx_from_anchor(struct if_usb_devdata *pipe_data)
 	}
 exit:
 	if (cnt)
-		mif_info("deferd tx urb=%d(CH%d)\n", cnt, pipe_data->idx);
+		mif_debug("deferd tx urb=%d(CH%d)\n", cnt, pipe_data->idx);
 	return ret;
 }
 
@@ -1219,7 +1219,7 @@ done:
 	pipe_data->usb_ld->suspended--;
 
 	if (!pipe_data->usb_ld->suspended) {
-		mif_info("resumed resumeby(%d)\n", pipe_data->usb_ld->resumeby);
+		mif_debug("resumed resumeby(%d)\n", pipe_data->usb_ld->resumeby);
 		mif_com_log(pipe_data->iod->msd, "Called %s func\n", __func__);
 	}
 	return 0;
@@ -1431,13 +1431,13 @@ static int mif_usb2phy_notify(struct notifier_block *nfb,
 	switch (events) {
 	case STATE_HSIC_LPA_ENTER:
 		gpio_set_value(mc->gpio_pda_active, 0);
-		mif_info("lpa enter(%ld): pda active(%d)\n",
+		mif_debug("lpa enter(%ld): pda active(%d)\n",
 			events, gpio_get_value(mc->gpio_pda_active));
 		break;
 	case STATE_HSIC_LPA_WAKE:
 	case STATE_HSIC_LPA_PHY_INIT:
 		gpio_set_value(mc->gpio_pda_active, 1);
-		mif_info("phy_init(%ld): pda active(%d)\n",
+		mif_debug("phy_init(%ld): pda active(%d)\n",
 			events, gpio_get_value(mc->gpio_pda_active));
 		break;
 	}

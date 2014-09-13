@@ -1266,7 +1266,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, int force)
 				reset_div = false;
 		} while(reset_div);
 
-		dev_info(&slot->mmc->class_dev,
+		dev_dbg(&slot->mmc->class_dev,
 			 "Bus speed (slot %d) = %dHz (slot req %dHz, actual %dHZ"
 			 " div = %d)\n", slot->id, host->bus_hz, slot->clock,
 			 div ? ((host->bus_hz / div) >> 1) : host->bus_hz, div);
@@ -1946,7 +1946,7 @@ static int dw_mci_execute_tuning(struct mmc_host *mmc, u32 opcode)
 			else
 				mid = get_median_sample(host, (u8)map);
 
-			dev_info(&host->dev,
+			dev_dbg(&host->dev,
 				"Tuning map: 0x %08x mid: %d\n", map, mid);
 
 			host->pdata->tuning_map[MAX_TUNING_RETRIES-retries] = map;
@@ -2008,7 +2008,7 @@ static int dw_mci_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		ret = -EIO;
 	}
 
-	dev_info(&host->dev, "CLKSEL 0x %08x\n", mci_readl(host, CLKSEL));
+	dev_dbg(&host->dev, "CLKSEL 0x %08x\n", mci_readl(host, CLKSEL));
 
 	kfree(tuning_blk);
 

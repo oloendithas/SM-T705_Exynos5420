@@ -1403,7 +1403,7 @@ int s5p_usb_phy_suspend(struct platform_device *pdev, int type)
 			ret = exynos4_usb_phy1_suspend(pdev);
 		else
 			ret = exynos5_usb_phy_host_suspend(pdev);
-		dev_info(&pdev->dev, "host_phy_susp\n");
+		dev_dbg(&pdev->dev, "host_phy_susp\n");
 	}
 done:
 	mutex_unlock(&usb_phy_control.phy_lock);

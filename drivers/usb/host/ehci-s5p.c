@@ -298,11 +298,11 @@ static int s5p_ehci_runtime_suspend(struct device *dev)
 #if defined(CONFIG_MDM_HSIC_PM)
 	request_active_lock_release();
 #endif
-#if defined(CONFIG_LINK_DEVICE_HSIC) || defined(CONFIG_MDM_HSIC_PM)
-	pr_info("%s: usage=%d, child=%d\n", __func__,
-					atomic_read(&dev->power.usage_count),
-					atomic_read(&dev->power.child_count));
-#endif
+//#if defined(CONFIG_LINK_DEVICE_HSIC) || defined(CONFIG_MDM_HSIC_PM)
+//	pr_info("%s: usage=%d, child=%d\n", __func__,
+//					atomic_read(&dev->power.usage_count),
+//					atomic_read(&dev->power.child_count));
+//#endif
 
 	if (pm_qos_request_active(&s5p_ehci_mif_qos))
 		pm_qos_update_request(&s5p_ehci_mif_qos, 0);
@@ -361,11 +361,11 @@ static int s5p_ehci_runtime_resume(struct device *dev)
 		usb2phy_notifier(STATE_HSIC_RESUME, NULL);
 #endif
 	}
-#if defined(CONFIG_LINK_DEVICE_HSIC) || defined(CONFIG_MDM_HSIC_PM)
-	pr_info("%s: usage=%d, child=%d\n", __func__,
-					atomic_read(&dev->power.usage_count),
-					atomic_read(&dev->power.child_count));
-#endif
+//#if defined(CONFIG_LINK_DEVICE_HSIC) || defined(CONFIG_MDM_HSIC_PM)
+//	pr_info("%s: usage=%d, child=%d\n", __func__,
+//					atomic_read(&dev->power.usage_count),
+//					atomic_read(&dev->power.child_count));
+//#endif
 	return 0;
 }
 #else

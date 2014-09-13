@@ -800,7 +800,7 @@ static ssize_t max77803_muic_show_usb_state(struct device *dev,
 					    char *buf)
 {
 	struct max77803_muic_info *info = dev_get_drvdata(dev);
-	dev_info(info->dev, "func:%s info->cable_type:%d\n",
+	dev_dbg(info->dev, "func:%s info->cable_type:%d\n",
 		 __func__, info->cable_type);
 	switch (info->cable_type) {
 	case CABLE_TYPE_USB_MUIC:
@@ -1610,7 +1610,7 @@ static int max77803_muic_set_charging_type(struct max77803_muic_info *info,
 {
 	struct max77803_muic_data *mdata = info->muic_data;
 	int ret = 0;
-	dev_info(info->dev, "func:%s force_disable:%d\n",
+	dev_dbg(info->dev, "func:%s force_disable:%d\n",
 		 __func__, force_disable);
 	if (mdata->charger_cb) {
 		if (force_disable)
@@ -3045,7 +3045,7 @@ static int max77803_muic_handle_detach(struct max77803_muic_info *info, int irq)
 	enum cable_type_muic prev_ct = CABLE_TYPE_NONE_MUIC;
 	u8 cntl2_val;
 	int ret = 0;
-	dev_info(info->dev, "func:%s\n", __func__);
+	dev_dbg(info->dev, "func:%s\n", __func__);
 
 	info->is_adc_open_prev = true;
 	/* Workaround: irq doesn't occur after detaching mHL cable */
@@ -3368,7 +3368,7 @@ static int max77803_muic_filter_dev(struct max77803_muic_info *info,
 	vbvolt = status2 & STATUS2_VBVOLT_MASK;
 	dxovp = status2 & STATUS2_DXOVP_MASK;
 
-	dev_info(info->dev, "adc:%x adcerr:%x chgtyp:%x vb:%x dxovp:%x cable_type:%d\n",
+	dev_dbg(info->dev, "adc:%x adcerr:%x chgtyp:%x vb:%x dxovp:%x cable_type:%d\n",
 		adc, adcerr, chgtyp, vbvolt, dxovp, info->cable_type);
 
 #if defined(CONFIG_MUIC_MAX77803_SUPPORT_MHL_CABLE_DETECTION)
@@ -3474,10 +3474,10 @@ static void max77803_muic_detect_dev(struct max77803_muic_info *info, int irq)
 	int intr = INT_ATTACH;
 
 	ret = max77803_read_reg(client, MAX77803_MUIC_REG_CTRL1, &cntl1_val);
-	dev_info(info->dev, "func:%s CONTROL1:%x\n", __func__, cntl1_val);
+	dev_dbg(info->dev, "func:%s CONTROL1:%x\n", __func__, cntl1_val);
 
 	ret = max77803_bulk_read(client, MAX77803_MUIC_REG_STATUS1, 2, status);
-	dev_info(info->dev, "func:%s irq:%d ret:%d\n", __func__, irq, ret);
+	dev_dbg(info->dev, "func:%s irq:%d ret:%d\n", __func__, irq, ret);
 	if (ret) {
 		dev_err(info->dev, "%s: fail to read muic reg(%d)\n", __func__,
 			ret);
@@ -3502,7 +3502,7 @@ static void max77803_muic_detect_dev(struct max77803_muic_info *info, int irq)
 		max77803_read_reg(info->max77803->i2c,
 			MAX77803_CHG_REG_CHG_INT_MASK, &int_mask);
 	}
-	dev_info(info->dev, "%s: STATUS1:0x%x, 2:0x%x\n", __func__,
+	dev_dbg(info->dev, "%s: STATUS1:0x%x, 2:0x%x\n", __func__,
 		 status[0], status[1]);
 
 #if !defined(CONFIG_MACH_GC1)
@@ -3523,10 +3523,10 @@ static void max77803_muic_detect_dev(struct max77803_muic_info *info, int irq)
 	info->vbvolt = status[1] & STATUS2_VBVOLT_MASK;
 
 	if (intr == INT_ATTACH) {
-		dev_info(info->dev, "%s: ATTACHED\n", __func__);
+		dev_dbg(info->dev, "%s: ATTACHED\n", __func__);
 		max77803_muic_handle_attach(info, status[0], status[1], irq);
 	} else if (intr == INT_DETACH) {
-		dev_info(info->dev, "%s: DETACHED\n", __func__);
+		dev_dbg(info->dev, "%s: DETACHED\n", __func__);
 		max77803_muic_handle_detach(info, irq);
 	} else {
 		pr_info("%s:%s device filtered, nothing affect.\n", DEV_NAME,
@@ -3696,7 +3696,7 @@ static void max77803_muic_init_detect(struct work_struct *work)
 {
 	struct max77803_muic_info *info =
 	    container_of(work, struct max77803_muic_info, init_work.work);
-	dev_info(info->dev, "func:%s\n", __func__);
+	dev_dbg(info->dev, "func:%s\n", __func__);
 	if(info->cable_type == CABLE_TYPE_UNKNOWN_MUIC)
 	{
 		mutex_lock(&info->mutex);

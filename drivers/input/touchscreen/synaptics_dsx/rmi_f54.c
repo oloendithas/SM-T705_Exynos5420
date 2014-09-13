@@ -2384,7 +2384,7 @@ static ssize_t cmd_status_show(struct device *dev,
 	struct factory_data *data = f54->factory_data;
 	struct synaptics_rmi4_data *rmi4_data = f54->rmi4_data;
 
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s: Command status = %d\n",
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "%s: Command status = %d\n",
 	    __func__, data->cmd_state);
 
 	switch (data->cmd_state) {
@@ -2417,7 +2417,7 @@ static ssize_t cmd_result_show(struct device *dev,
 	struct factory_data *data = f54->factory_data;
 	struct synaptics_rmi4_data *rmi4_data = f54->rmi4_data;
 
-	tsp_debug_info(true, &rmi4_data->i2c_client->dev, "%s: Command result = %s\n",
+	tsp_debug_dbg(true, &rmi4_data->i2c_client->dev, "%s: Command result = %s\n",
 		__func__, data->cmd_result);
 
 	mutex_lock(&data->cmd_lock);

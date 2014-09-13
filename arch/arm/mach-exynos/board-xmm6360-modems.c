@@ -292,7 +292,7 @@ static void s5p_ehci_wait_cp_resume(int port)
 	do {
 		msleep(20);
 		val = readl(portsc);
-		mif_info("port(%d), reg(0x%x)\n", port, val);
+		mif_debug("port(%d), reg(0x%x)\n", port, val);
 	} while (cnt-- && !(val & PORT_CONNECT));
 #ifdef EHCI_REG_DUMP
 	if (!(val & PORT_CONNECT))

@@ -343,8 +343,8 @@ static void exynos_drd_init(struct exynos_drd_core *core)
 	 */
 	if (drd->core.release == 0x131a)
 		drd->core.release = 0x180a;
-	dev_info(drd->dev, "Core ID Number: 0x%04x\n", reg >> 16);
-	dev_info(drd->dev, "Release Number: 0x%04x\n", drd->core.release);
+	dev_dbg(drd->dev, "Core ID Number: 0x%04x\n", reg >> 16);
+	dev_dbg(drd->dev, "Release Number: 0x%04x\n", drd->core.release);
 
 	/*
 	 * WORKAROUND: DWC3 revisions <1.90a have a bug
