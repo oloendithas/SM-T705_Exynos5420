@@ -11,6 +11,7 @@
  */
 
 
+//#define DEBUG 1
 #include <linux/battery/sec_battery.h>
 
 static struct device_attribute sec_battery_attrs[] = {
@@ -1935,7 +1936,7 @@ skip_updating_status:
 #endif
 
 	if (battery->capacity <= 0)
-		wake_lock_timeout(&battery->monitor_wake_lock, HZ * 5);
+		wake_lock_timeout(&battery->monitor_wake_lock, HZ * 1);
 	else
 		wake_unlock(&battery->monitor_wake_lock);
 
@@ -2058,8 +2059,7 @@ static void sec_bat_cable_work(struct work_struct *work)
 	battery->polling_count = 1;	/* initial value = 1 */
 
 	wake_lock(&battery->monitor_wake_lock);
-	queue_delayed_work(battery->monitor_wqueue, &battery->monitor_work,
-					msecs_to_jiffies(500));
+	queue_delayed_work(battery->monitor_wqueue, &battery->monitor_work,	100);
 end_of_cable_work:
 	wake_unlock(&battery->cable_wake_lock);
 
@@ -3467,13 +3467,28 @@ static int __devexit sec_battery_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static unsigned int last_suspend_alarm_timestamp;
 static int sec_battery_prepare(struct device *dev)
 {
 	struct sec_battery_info *battery
 		= dev_get_drvdata(dev);
+	unsigned int elapsed;
+	int polling_time = sec_bat_get_polling_time(battery);
+	unsigned int curr_time = ktime_to_timeval(ktime_get_boottime()).tv_sec;
+	elapsed = curr_time - last_suspend_alarm_timestamp;
 
 	dev_dbg(battery->dev, "%s: Start\n", __func__);
 
+	
+	// Do not poll battery on every device suspend
+	if (last_suspend_alarm_timestamp != 0 
+		&& elapsed < battery->pdata->polling_time[1]) {
+		dev_dbg(battery->dev, "curr_time=%d, polling_time=%d, elapsed=%d\n", 
+				curr_time, battery->polling_time, elapsed);
+		dev_info(battery->dev, "%s: Aborted\n", __func__);
+		return 0;
+	}
+	
 	switch (battery->pdata->polling_type) {
 	case SEC_BATTERY_MONITOR_WORKQUEUE:
 		cancel_delayed_work(&battery->polling_work);
@@ -3498,6 +3513,7 @@ static int sec_battery_prepare(struct device *dev)
 		SEC_BATTERY_MONITOR_WORKQUEUE)
 		cancel_delayed_work(&battery->polling_work);
 
+	last_suspend_alarm_timestamp = ktime_to_timeval(ktime_get_boottime()).tv_sec;
 	dev_dbg(battery->dev, "%s: End\n", __func__);
 
 	return 0;
@@ -3513,17 +3529,35 @@ static int sec_battery_resume(struct device *dev)
 	return 0;
 }
 
+static unsigned int last_resume_alarm_timestamp;
+
 static void sec_battery_complete(struct device *dev)
 {
 	struct sec_battery_info *battery
 		= dev_get_drvdata(dev);
+		
+	unsigned int elapsed;
+	int polling_time = sec_bat_get_polling_time(battery);
+	unsigned int curr_time = ktime_to_timeval(ktime_get_boottime()).tv_sec;
+	elapsed = curr_time - last_resume_alarm_timestamp;
 
 	dev_dbg(battery->dev, "%s: Start\n", __func__);
+	
+	// Do not poll battery on every device resume
+	if (last_resume_alarm_timestamp != 0 
+		&& elapsed < battery->pdata->polling_time[1]) {
+		dev_dbg(battery->dev, "curr_time=%d, polling_time=%d, elapsed=%d\n", 
+				curr_time, battery->polling_time, elapsed);
+		dev_info(battery->dev, "%s: Aborted\n", __func__);
+		return;
+	}
 
 	wake_lock(&battery->monitor_wake_lock);
 	queue_delayed_work(battery->monitor_wqueue,
-		&battery->monitor_work, 500);
+		&battery->monitor_work, 100);
 
+	last_suspend_alarm_timestamp = 0;
+	last_resume_alarm_timestamp = ktime_to_timeval(ktime_get_boottime()).tv_sec;
 	dev_dbg(battery->dev, "%s: End\n", __func__);
 
 	return;
