@@ -27,11 +27,11 @@
 #define MALI_DVFS_CURRENT_FREQ 0
 
 #if SOC_NAME == 5420
-#if defined(CONFIG_SUPPORT_WQXGA)
-#define MALI_DVFS_START_FREQ 266
-#else
+//#if defined(CONFIG_SUPPORT_WQXGA)
+//#define MALI_DVFS_START_FREQ 266
+//#else
 #define MALI_DVFS_START_FREQ 100
-#endif
+//#endif
 #define MALI_DVFS_BL_CONFIG_FREQ 677
 #define IS_ASV_ENABLED
 #else
