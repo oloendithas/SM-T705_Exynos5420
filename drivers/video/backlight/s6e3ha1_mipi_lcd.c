@@ -85,6 +85,10 @@
 #define smtd_dbg(format, arg...)
 #endif
 
+#ifdef CONFIG_FB_S5P_MDNIE_LITE
+extern void mdnie_update_brightness(struct mdnie_device *md_dev, int brightness);
+#endif
+
 static const unsigned int DIM_TABLE[IBRIGHTNESS_MAX] = {
 	2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
 	12, 13, 14, 15, 16, 17, 19, 20, 21, 22,
@@ -916,7 +920,7 @@ static void show_lcd_table(struct lcd_info *lcd)
 static int update_brightness(struct lcd_info *lcd, u8 force)
 {
 	u32 brightness;
-
+	int i = 0;
 	mutex_lock(&lcd->bl_lock);
 
 	brightness = lcd->bd->props.brightness;
@@ -942,6 +946,10 @@ static int update_brightness(struct lcd_info *lcd, u8 force)
 		dev_info(&lcd->ld->dev, "brightness=%d, bl=%d, candela=%d\n",
 			brightness, lcd->bl, DIM_TABLE[lcd->bl]);
 	}
+
+#ifdef CONFIG_FB_S5P_MDNIE_LITE
+	mdnie_update_brightness(lcd->md, brightness);
+#endif
 
 	mutex_unlock(&lcd->bl_lock);
 
