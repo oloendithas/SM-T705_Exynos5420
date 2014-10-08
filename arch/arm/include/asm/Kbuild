@@ -20,3 +20,4 @@ generic-y += siginfo.h
 generic-y += sizes.h
 generic-y += unaligned.h
 generic-y += termios.h
+generic-y += rwsem.h
