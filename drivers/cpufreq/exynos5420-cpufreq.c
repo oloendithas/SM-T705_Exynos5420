@@ -24,7 +24,9 @@
 
 #include <plat/clock.h>
 
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 #define CPUFREQ_LEVEL_END_CA7	(L14 + 1)
 #define CPUFREQ_LEVEL_END_CA15	(L22 + 1)
@@ -759,9 +761,11 @@ static void exynos5420_set_frequency_CA7(unsigned int old_index,
 {
 	unsigned int tmp;
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 			"old:%7d new:%7d (A7)",
 			exynos5420_freq_table_CA7[old_index].frequency, exynos5420_freq_table_CA7[new_index].frequency);
+#endif
 
 	if (old_index > new_index) {
 		if (!exynos5420_pms_change_CA7(old_index, new_index)) {
@@ -818,9 +822,11 @@ static void exynos5420_set_frequency_CA15(unsigned int old_index,
 {
 	unsigned int tmp;
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 			"old:%7d new:%7d (A15)",
 			exynos5420_freq_table_CA15[old_index].frequency, exynos5420_freq_table_CA15[new_index].frequency);
+#endif
 	if (old_index > new_index) {
 		if (!exynos5420_pms_change_CA15(old_index, new_index)) {
 			/* 1. Change the system clock divider values */

@@ -37,7 +37,9 @@
 #include <plat/clock.h>
 
 #include "noc_probe.h"
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 #define SET_DREX_TIMING
 
@@ -488,9 +490,11 @@ static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
 	int i, target_idx = LV_0;
 	unsigned long tmp_clk;
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 			"old:%7d new:%7d (MIF)",
 			old_freq, target_freq);
+#endif
 
 	/*
 	 * Find setting value with target frequency

@@ -42,7 +42,9 @@
 #include <asm/ptrace.h>
 #include <asm/localtimer.h>
 #include <asm/smp_plat.h>
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 /*
  * as from 2.5, kernels no longer have an init_tasks structure
@@ -533,7 +535,9 @@ static void ipi_cpu_stop(unsigned int cpu, struct pt_regs *regs)
 	flush_cache_all();
 	local_flush_tlb_all();
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_save_context();
+#endif
 
 	while (1)
 		cpu_relax();
@@ -607,7 +611,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 	if (ipinr >= IPI_TIMER && ipinr < IPI_TIMER + NR_IPI)
 		__inc_irq_stat(cpu, ipi_irqs[ipinr - IPI_TIMER]);
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_irq_log(ipinr, do_IPI, 1);
+#endif
 
 	switch (ipinr) {
 	case IPI_PING:
@@ -651,7 +657,9 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		break;
 	}
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_irq_log(ipinr, do_IPI, 2);
+#endif
 
 	set_irq_regs(old_regs);
 }

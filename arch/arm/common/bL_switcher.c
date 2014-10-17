@@ -33,7 +33,9 @@
 #include <asm/hardware/gic.h>
 #include <asm/bL_switcher.h>
 #include <asm/bL_entry.h>
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 /*
  * Notifier list for kernel code which want to called at switch.

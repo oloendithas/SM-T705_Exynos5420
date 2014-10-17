@@ -29,7 +29,9 @@
 #include <trace/events/irq.h>
 
 #include <asm/irq.h>
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 /*
    - No shared variables, all the data are CPU local.
    - If a softirq needs serialization, let it serialize itself
@@ -236,9 +238,13 @@ restart:
 			kstat_incr_softirqs_this_cpu(vec_nr);
 
 			trace_softirq_entry(vec_nr);
-			sec_debug_softirq_log(9999, h->action, 4);
+#ifdef CONFIG_SEC_DEBUG
+	sec_debug_softirq_log(9999, h->action, 4);
+#endif
 			h->action(h);
-			sec_debug_softirq_log(9999, h->action, 5);
+#ifdef CONFIG_SEC_DEBUG
+	sec_debug_softirq_log(9999, h->action, 5);
+#endif
 			trace_softirq_exit(vec_nr);
 			if (unlikely(prev_count != preempt_count())) {
 				printk(KERN_ERR "huh, entered softirq %u %s %p"
@@ -460,9 +466,13 @@ static void tasklet_action(struct softirq_action *a)
 			if (!atomic_read(&t->count)) {
 				if (!test_and_clear_bit(TASKLET_STATE_SCHED, &t->state))
 					BUG();
-				sec_debug_softirq_log(9997, t->func, 4);
+#ifdef CONFIG_SEC_DEBUG
+	sec_debug_softirq_log(9997, t->func, 4);
+#endif
 				t->func(t->data);
-				sec_debug_softirq_log(9997, t->func, 5);
+#ifdef CONFIG_SEC_DEBUG
+	sec_debug_softirq_log(9997, t->func, 5);
+#endif
 				tasklet_unlock(t);
 				continue;
 			}
@@ -497,9 +507,13 @@ static void tasklet_hi_action(struct softirq_action *a)
 			if (!atomic_read(&t->count)) {
 				if (!test_and_clear_bit(TASKLET_STATE_SCHED, &t->state))
 					BUG();
-				sec_debug_softirq_log(9998, t->func, 4);
+#ifdef CONFIG_SEC_DEBUG
+	sec_debug_softirq_log(9998, t->func, 4);
+#endif
 				t->func(t->data);
-				sec_debug_softirq_log(9998, t->func, 5);
+#ifdef CONFIG_SEC_DEBUG
+	sec_debug_softirq_log(9998, t->func, 5);
+#endif
 				tasklet_unlock(t);
 				continue;
 			}

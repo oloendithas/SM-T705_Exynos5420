@@ -87,7 +87,9 @@ extern unsigned long curr_int_freq;
 extern int mali_get_dvfs_current_level(void);
 #endif
 
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 #ifdef CONFIG_FB_S5P_MDNIE
 #include <plat/regs-mdnie.h>
 #include <plat/regs-ielcd.h>
@@ -5324,12 +5326,14 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
 	pm_stay_awake(sfb->dev);
 	dev_warn(sfb->dev, "pm_stay_awake");
 
+#ifdef CONFIG_SEC_DEBUG
 	if (win == sfb->pdata->default_win) {
 		sec_getlog_supply_fbinfo((void *)fbinfo->fix.smem_start,
 			fbinfo->var.xres,
 			fbinfo->var.yres,
 			fbinfo->var.bits_per_pixel, 3);
 	}
+#endif
 
 	dev_info(sfb->dev, "window %d: fb %s\n", default_win, fbinfo->fix.id);
 

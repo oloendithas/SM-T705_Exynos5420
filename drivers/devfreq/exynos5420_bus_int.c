@@ -33,7 +33,9 @@
 #include <plat/clock.h>
 
 #include "exynos5420_ppmu.h"
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 #define INT_VOLT_STEP		12500
 #define COLD_VOLT_OFFSET	37500
@@ -861,9 +863,11 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 	struct int_pm_clks *int_clk;
 	struct clk *temp_clk;
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 			"old:%7d new:%7d (INT)",
 			pre_freq, target_freq);
+#endif
 
 	/* Find setting value with target and previous frequency */
 	for (i = 0; i < LV_END; i++) {

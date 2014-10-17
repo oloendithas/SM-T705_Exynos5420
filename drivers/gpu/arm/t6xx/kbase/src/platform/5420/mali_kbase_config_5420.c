@@ -22,7 +22,9 @@
 #include <linux/suspend.h>
 #include <kbase/src/platform/mali_kbase_dvfs.h>
 
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 #define HZ_IN_MHZ                           (1000000)
 #ifdef CONFIG_MALI_T6XX_RT_PM
@@ -169,14 +171,16 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 	struct device *dev =  kbdev->osdev.dev;
 	struct exynos_context * platform = (struct exynos_context *) kbdev->platform_context;
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 		"g3d turn on++++");
+#endif
 
 	kbase_platform_clock_on(kbdev);
-#ifdef CONFIG_MALI_T6XX_DVFS
+//#ifdef CONFIG_MALI_T6XX_DVFS
 	//if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
 	//	return -EPERM;
-#endif
+//#endif
 	mout_vpll = clk_get(dev, "mout_vpll");
 	if (IS_ERR(mout_vpll)) {
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [mout_vpll]\n");
@@ -209,23 +213,29 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 		return 0;
 	}
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 		"g3d turn on---");
+#endif
 
 	return 0;
 }
 
 static void pm_callback_runtime_off(kbase_device *kbdev)
 {
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 		"g3d turn off++++");
+#endif
 	kbase_platform_clock_off(kbdev);
-#ifdef CONFIG_MALI_T6XX_DVFS
+//#ifdef CONFIG_MALI_T6XX_DVFS
 	//if (kbase_platform_dvfs_enable(false, MALI_DVFS_CURRENT_FREQ) != MALI_TRUE)
 	//	printk("[err] disabling dvfs is faled\n");
-#endif
+//#endif
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 		"g3d turn off---");
+#endif
 }
 
 static kbase_pm_callback_conf pm_callbacks = {

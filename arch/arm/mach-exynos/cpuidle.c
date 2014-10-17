@@ -49,7 +49,9 @@
 #include <plat/usb-phy.h>
 #include <plat/audio.h>
 #include <plat/clock.h>
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 #ifdef CONFIG_ARM_TRUSTZONE
 #define REG_DIRECTGO_ADDR	(S5P_VA_SYSRAM_NS + 0x24)

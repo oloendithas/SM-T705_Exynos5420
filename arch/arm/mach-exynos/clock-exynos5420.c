@@ -29,7 +29,9 @@
 #include <mach/sysmmu.h>
 #include <mach/regs-clock.h>
 
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 #define clk_fin_rpll clk_ext_xtal_mux
 #define clk_fin_spll clk_ext_xtal_mux
@@ -325,11 +327,15 @@ static int exynos5_v_epll_ctrl(struct clk *clk, int enable)
 static int exynos5_v_vpll_ctrl(struct clk *clk, int enable)
 {
 	int ret = 0;
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 		"VPLL is %s ++++", enable ? "on" : "off");
+#endif
 	ret = s5p_gatectrl(EXYNOS5_VPLL_CON0, clk, enable);
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 		"VPLL is %s ---", enable ? "on" : "off");
+#endif
 	return ret;
 }
 

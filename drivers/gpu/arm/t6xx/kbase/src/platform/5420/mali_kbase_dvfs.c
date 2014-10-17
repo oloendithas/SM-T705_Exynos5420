@@ -62,7 +62,9 @@
 
 #include <mach/exynos5_bus.h>
 
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 #ifdef MALI_DVFS_ASV_ENABLE
 #include <mach/asv-exynos.h>
@@ -1184,10 +1186,12 @@ void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 	mutex_lock(&mali_set_clock_lock);
 #endif
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_aux_log(SEC_DEBUG_AUXLOG_CPU_BUS_CLOCK_CHANGE,
 			"old:%7d new:%7d (G3D)",
 			mali_dvfs_infotbl[prev_level].clock*1000, 
 			mali_dvfs_infotbl[level].clock*1000);
+#endif
 
 	mif_qos = mali_dvfs_infotbl[level].mem_freq;
 	int_qos = mali_dvfs_infotbl[level].int_freq;

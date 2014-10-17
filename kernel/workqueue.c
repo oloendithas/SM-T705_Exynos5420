@@ -43,7 +43,9 @@
 #include <linux/idr.h>
 #include <linux/moduleparam.h>
 
+#ifdef CONFIG_SEC_DEBUG
 #include <mach/sec_debug.h>
+#endif
 
 #include "workqueue_sched.h"
 
@@ -1887,14 +1889,18 @@ __acquires(&gcwq->lock)
 	lock_map_acquire(&lockdep_map);
 	trace_workqueue_execute_start(work);
 
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_work_log(worker, work, f, 1);
+#endif
 
 	f(work);
 	/*
 	 * While we must be careful to not use "work" after this, the trace
 	 * point will only record its address.
 	 */
+#ifdef CONFIG_SEC_DEBUG
 	sec_debug_work_log(worker, work, f, 2);
+#endif
 	trace_workqueue_execute_end(work);
 	lock_map_release(&lockdep_map);
 	lock_map_release(&cwq->wq->lockdep_map);
