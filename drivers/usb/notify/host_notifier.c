@@ -18,7 +18,9 @@
 #include <linux/wakelock.h>
 #include <linux/host_notify.h>
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+#if defined(CONFIG_POWERSUSPEND) && defined(CONFIG_FAST_BOOT)
+#include <linux/powersuspend.h>
+#elif defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 #include <linux/earlysuspend.h>
 #endif
 
@@ -34,7 +36,9 @@ struct  host_notifier_info {
 
 static struct host_notifier_info ninfo;
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+#if defined(CONFIG_POWERSUSPEND) && defined(CONFIG_FAST_BOOT)
+static struct power_suspend power_suspend;
+#elif defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 static struct early_suspend early_suspend;
 #endif
 
@@ -251,7 +255,30 @@ static void currentlimit_irq_work(struct work_struct *work)
 	return;
 }
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+#if defined(CONFIG_POWERSUSPEND) && defined(CONFIG_FAST_BOOT)
+static bool restart_hostd;
+static void host_notifier_power_suspend(struct power_suspend *h)
+{
+	if (fake_shut_down) {
+		pr_info("%s: fake shut down ", __func__);
+		host_notifier_booster(0);
+		stop_usbhostd_wakelock();
+		restart_hostd = true;
+	}
+}
+
+static void host_notifier_late_resume(struct power_suspend *h)
+{
+	if (restart_hostd) {
+		pr_info("%s: fake shut down ", __func__);
+		restart_hostd = false;
+		if (ninfo.pdata->is_host_working) {
+			host_notifier_booster(1);
+			start_usbhostd_wakelock();
+		}
+	}
+}
+#elif defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 static bool restart_hostd;
 static void host_notifier_early_suspend(struct early_suspend *h)
 {
@@ -321,7 +348,12 @@ static int host_notifier_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+#if defined(CONFIG_POWERSUSPEND) && defined(CONFIG_FAST_BOOT)
+	power_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1;
+	power_suspend.suspend = host_notifier_power_suspend;
+	power_suspend.resume = host_notifier_late_resume;
+	register_power_suspend(&power_suspend);
+#elif defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 	early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1;
 	early_suspend.suspend = host_notifier_early_suspend;
 	early_suspend.resume = host_notifier_late_resume;
@@ -334,7 +366,9 @@ static int host_notifier_probe(struct platform_device *pdev)
 
 static int host_notifier_remove(struct platform_device *pdev)
 {
-#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+#if defined(CONFIG_POWERSUSPEND) && defined(CONFIG_FAST_BOOT)
+	unregister_power_suspend(&power_suspend);
+#elif defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
 	unregister_early_suspend(&early_suspend);
 #endif
 	/* gpio_free(ninfo.pdata->gpio); */
