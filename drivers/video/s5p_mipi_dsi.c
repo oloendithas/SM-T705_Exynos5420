@@ -1677,7 +1677,7 @@ static void s5p_mipi_dsi_shutdown(struct platform_device *pdev)
 }
 
 static const struct dev_pm_ops mipi_dsi_pm_ops = {
-#ifndef CONFIG_HAS_EARLYSUSPEND
+#if !defined(CONFIG_HAS_EARLYSUSPEND) && !defined(CONFIG_POWERSUSPEND)
 	.suspend = s5p_mipi_dsi_suspend,
 	.resume = s5p_mipi_dsi_resume,
 #endif

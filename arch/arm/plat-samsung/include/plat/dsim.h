@@ -21,7 +21,9 @@
 
 #include <linux/regulator/consumer.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+#include <linux/powersuspend.h>
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #endif
 
@@ -287,7 +289,9 @@ struct mipi_dsim_device {
 	struct notifier_block fb_notif;
 
 	struct mipi_dsim_lcd_driver	*dsim_lcd_drv;
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+	struct power_suspend	power_suspend;
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend	early_suspend;
 #endif
 	struct lcd_device	*lcd;
