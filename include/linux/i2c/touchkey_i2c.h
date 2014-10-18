@@ -3,9 +3,12 @@
 
 #include <linux/types.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+#include <linux/powersuspend.h>
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #endif
+
 
 /* LDO Regulator */
 #define	TK_REGULATOR_NAME	"vtouch_1.8v"

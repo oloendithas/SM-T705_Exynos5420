@@ -14,7 +14,9 @@
 #include <linux/delay.h>
 #include <linux/wakelock.h>
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+#include <linux/powersuspend.h>
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #endif
 
@@ -187,7 +189,9 @@ struct touchkey_i2c {
 	struct i2c_client *client;
 	struct input_dev *input_dev;
 	struct completion init_done;
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+	struct power_suspend power_suspend;
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
 #endif
 	struct mutex lock;

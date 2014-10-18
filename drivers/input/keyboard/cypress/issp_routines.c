@@ -52,7 +52,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <asm/gpio.h>
 #include <linux/miscdevice.h>
 #include <asm/uaccess.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+#include <linux/powersuspend.h>
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #endif
 #include <asm/io.h>

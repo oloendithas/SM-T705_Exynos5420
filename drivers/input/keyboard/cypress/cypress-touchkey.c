@@ -7,7 +7,6 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-
 #include <linux/module.h>
 
 #include <linux/init.h>
@@ -27,7 +26,9 @@
 #include <linux/gpio.h>
 #include <linux/miscdevice.h>
 #include <linux/uaccess.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+#include <linux/powersuspend.h>
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #endif
 #include <linux/io.h>
@@ -1569,7 +1570,34 @@ static void touchkey_input_close(struct input_dev *dev)
 }
 
 #ifdef CONFIG_PM
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+#define touchkey_suspend	NULL
+#define touchkey_resume	NULL
+
+static int sec_touchkey_power_suspend(struct power_suspend *h)
+{
+	struct touchkey_i2c *tkey_i2c =
+		container_of(h, struct touchkey_i2c, power_suspend);
+
+	touchkey_stop(tkey_i2c);
+
+	dev_dbg(&tkey_i2c->client->dev, "%s\n", __func__);
+
+	return 0;
+}
+
+static int sec_touchkey_late_resume(struct power_suspend *h)
+{
+	struct touchkey_i2c *tkey_i2c =
+		container_of(h, struct touchkey_i2c, power_suspend);
+
+	dev_dbg(&tkey_i2c->client->dev, "%s\n", __func__);
+
+	touchkey_start(tkey_i2c);
+
+	return 0;
+}
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 #define touchkey_suspend	NULL
 #define touchkey_resume	NULL
 
@@ -2198,7 +2226,13 @@ tkey_firmupdate_retry_byreboot:
 	}
 #endif
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_POWERSUSPEND)
+	tkey_i2c->power_suspend.suspend =
+		(void *)sec_touchkey_power_suspend;
+	tkey_i2c->power_suspend.resume =
+		(void *)sec_touchkey_late_resume;
+	register_power_suspend(&tkey_i2c->power_suspend);
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
 	tkey_i2c->early_suspend.suspend =
 		(void *)sec_touchkey_early_suspend;
 	tkey_i2c->early_suspend.resume =
@@ -2248,6 +2282,12 @@ err_allocate_input_device:
 void touchkey_shutdown(struct i2c_client *client)
 {
 	struct touchkey_i2c *tkey_i2c = i2c_get_clientdata(client);
+
+#if defined(CONFIG_POWERSUSPEND)
+	unregister_power_suspend(&tkey_i2c->power_suspend);
+#elif defined(CONFIG_HAS_EARLYSUSPEND)
+	unregister_early_suspend(&tkey_i2c->early_suspend);
+#endif
 
 	tkey_i2c->pdata->power_on(0);
 	tkey_i2c->pdata->led_power_on(0);
