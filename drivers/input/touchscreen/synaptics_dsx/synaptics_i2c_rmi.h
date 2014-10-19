@@ -64,7 +64,7 @@
 #define PROXIMITY_MODE
 #define EDGE_SWIPE
 #define USE_CUSTOM_REZERO
-#define DEBUG_HOVER
+//#define DEBUG_HOVER
 #define USE_SHUTDOWN_CB
 #ifdef CONFIG_INPUT_BOOSTER
 #define TSP_BOOSTER

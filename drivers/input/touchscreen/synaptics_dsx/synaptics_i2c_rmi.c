@@ -4608,6 +4608,9 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 
 	tsp_debug_dbg(false, &rmi4_data->i2c_client->dev, "%s\n", __func__);
 
+	if (rmi4_data->touch_stopped) 
+		return;
+	
 #ifdef USE_SENSOR_SLEEP
 	if (rmi4_data->use_deepsleep)
 		synaptics_rmi4_sensor_sleep(rmi4_data);
@@ -4635,6 +4638,9 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
 				early_suspend);
 
 	tsp_debug_dbg(false, &rmi4_data->i2c_client->dev, "%s\n", __func__);
+
+	if (!rmi4_data->touch_stopped)
+			return;
 
 #ifdef USE_SENSOR_SLEEP
 	if (rmi4_data->use_deepsleep) {

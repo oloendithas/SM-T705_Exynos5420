@@ -64,7 +64,9 @@
 #define TK_RUN_CHK 3
 
 /* Flip cover*/
+#if defined(CONFIG_GLOVE_TOUCH)
 #define TKEY_FLIP_MODE
+#endif
 
 #ifdef TKEY_FLIP_MODE
 #define TK_BIT_FLIP	0x08
