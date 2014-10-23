@@ -119,6 +119,7 @@ struct mdnie_info {
 	unsigned int white_b;
 	struct mdnie_table table_buffer;
 	mdnie_t sequence_buffer[256];
+	bool is_fb_notif_cb;
 };
 
 extern void set_tuning_enabled(unsigned int value);

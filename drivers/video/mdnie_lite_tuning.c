@@ -87,7 +87,7 @@ int mdnie_calibration(int *r)
 	ret = (ret > 0) ? ret : 1;
 	ret = (ret > 9) ? 1 : ret;
 
-	pr_info("%d, %d, %d, %d, tune%d\n", r[1], r[2], r[3], r[4], ret);
+	pr_info("mdnie_calibration: %d, %d, %d, %d, tune%d\n", r[1], r[2], r[3], r[4], ret);
 
 	return ret;
 }
@@ -310,7 +310,7 @@ void mdnie_update_brightness(struct mdnie_device *md_dev, int brightness)
 	struct mdnie_table *table = NULL;
 	int i = 0, j = 0;
 
-	if (brightness)
+	if (brightness && brightness > 0)
 		last_brightness = brightness - 1;
 
 	if (get_tuning_enabled() != 1) {
@@ -328,53 +328,53 @@ void mdnie_update_brightness(struct mdnie_device *md_dev, int brightness)
 	mdnie = (struct mdnie_info *)mdnie_get_data(md_dev);
 	
 	if (IS_ERR_OR_NULL(mdnie)) {
-		dev_err(mdnie->dev, "mdnie is NULL\n");
+		pr_err("mdnie is NULL\n");
 		return;
 	}
 	
 	if (!mdnie->enable) {
 #ifdef DEBUG		
-		dev_dbg(mdnie->dev, "mdnie state is off\n");
+		dev_dbg(mdnie->dev, "%s: mdnie state is off\n", __func__);
 #endif
 		return;
 	}
 
 	if (!mdnie->tuning) {
 #ifdef DEBUG		
-		dev_dbg(mdnie->dev, "tunning mode is off\n");
+		dev_dbg(mdnie->dev, "%s: tunning mode is off\n", __func__);
 #endif
 		return;
 	}
     
 	if (IS_ERR_OR_NULL(correction_table)) {
 #ifdef DEBUG		
-		dev_dbg(mdnie->dev, "correction_table is NULL\n");
+		dev_dbg(mdnie->dev, "%s: correction_table is NULL\n", __func__);
 #endif
 		return;
 	}
 	
 #ifdef DEBUG		
 	if (!mdnie->path) {
-		dev_dbg(mdnie->dev, "mdnie->path is not set\n");
+		dev_dbg(mdnie->dev, "%s: mdnie->path is not set\n", __func__);
 	} else {
-		dev_dbg(mdnie->dev, "mdnie->path=%s\n", mdnie->path);
+		dev_dbg(mdnie->dev, "%s: mdnie->path=%s\n", __func__, mdnie->path);
 	}
 #endif
-    
+ 
 	table = mdnie_find_table(mdnie);
 	
 	if (IS_ERR_OR_NULL(table)) {
-		dev_err(mdnie->dev, "table is NULL\n");
+		dev_err(mdnie->dev, "%s: mdnie table is NULL\n", __func__);
 		return;
 	}
 	
 	if (IS_ERR_OR_NULL(table->name)) {
-		dev_err(mdnie->dev, "table->name is NULL\n");
+		dev_err(mdnie->dev, "%s: table->name is NULL\n", __func__);
 		return;
 	} 
 #ifdef DEBUG		
 	else {
-		dev_dbg(mdnie->dev, "table->name=%s\n", table->name);
+		dev_dbg(mdnie->dev, "%s: table->name=%s\n", __func__, table->name);
 	}
 
 	dev_dbg(mdnie->dev, "table->tune[MDNIE_CMD1].size=%d, table->tune[MDNIE_CMD2].size=%d\n",

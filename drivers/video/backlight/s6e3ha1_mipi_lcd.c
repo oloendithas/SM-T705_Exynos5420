@@ -107,7 +107,6 @@ union elvss_info {
 	};
 };
 
-
 struct lcd_info {
 	unsigned int			bl;
 	unsigned int			auto_brightness;
@@ -128,6 +127,7 @@ struct lcd_info {
 #if defined(CONFIG_FB_S5P_MDNIE_LITE)
 	struct mdnie_device		*md;
 	int				mdnie_addr;
+	struct delayed_work		mdnie_worker;
 #endif
 	unsigned char			id[LDI_ID_LEN];
 	unsigned char			ddi_id[LDI_ID2_LEN];
@@ -917,6 +917,14 @@ static void show_lcd_table(struct lcd_info *lcd)
 	}
 }
 
+#ifdef CONFIG_FB_S5P_MDNIE_LITE
+static void mdnie_update_brightness_work(struct work_struct *work) {
+	struct lcd_info *lcd =
+		container_of(work, struct lcd_info, mdnie_worker.work);
+	mdnie_update_brightness(lcd->md, lcd->bd->props.brightness);
+}
+#endif
+
 static int update_brightness(struct lcd_info *lcd, u8 force)
 {
 	u32 brightness;
@@ -948,7 +956,8 @@ static int update_brightness(struct lcd_info *lcd, u8 force)
 	}
 
 #ifdef CONFIG_FB_S5P_MDNIE_LITE
-	mdnie_update_brightness(lcd->md, brightness);
+	cancel_delayed_work(&lcd->mdnie_worker);
+	schedule_delayed_work(&lcd->mdnie_worker, msecs_to_jiffies(100));
 #endif
 
 	mutex_unlock(&lcd->bl_lock);
@@ -1346,6 +1355,9 @@ static int s6e3ha1_init_irq(struct lcd_info *lcd)
 			pr_err("%s: fail to ioremap\n", __func__);
 
 		INIT_DELAYED_WORK(&lcd->err_worker, err_detection_work);
+#ifdef CONFIG_FB_S5P_MDNIE_LITE
+		INIT_DELAYED_WORK(&lcd->mdnie_worker, mdnie_update_brightness_work);
+#endif
 		spin_lock_init(&lcd->slock);
 
 		ret = devm_request_irq(lcd->dev, lcd->errfg_irq, s6e3ha1_irq,

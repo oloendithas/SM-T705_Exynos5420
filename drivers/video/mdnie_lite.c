@@ -185,7 +185,13 @@ static void mdnie_update_sequence(struct mdnie_info *mdnie, struct mdnie_table *
 		else
 			mdnie_write_table(mdnie, table);
 			
-		mdnie_update_brightness(to_mdnie_device(mdnie->dev), 0);
+		if (mdnie->is_fb_notif_cb == true) {
+			mutex_lock(&mdnie->lock);
+			mdnie->is_fb_notif_cb = false;
+			mutex_unlock(&mdnie->lock);
+		} else {
+			mdnie_update_brightness(to_mdnie_device(mdnie->dev), 0);
+		}
 	} else
 		mdnie_write_table(mdnie, table);
 	return;
@@ -485,8 +491,18 @@ static ssize_t tuning_correction_store(struct device *dev,
 
 	snprintf(path, sizeof(MDNIE_SYSFS_PREFIX) + count-1, "%s%s", MDNIE_SYSFS_PREFIX, buf);
 	dev_dbg(dev, "%s: path=%s", __func__, path);
+
 	table = mdnie_find_table(mdnie);
+	if (IS_ERR_OR_NULL(table)) {
+		dev_err(dev, "%s: mdnie table is NULL\n", __func__);
+		goto exit;
+	}
+	
 	table = mdnie_request_table(path, table);
+	if (IS_ERR_OR_NULL(table)) {
+		dev_err(dev, "%s: table %s is NULL\n", __func__, path);
+		goto exit;
+	}
 	
 	for (j = MDNIE_CMD1; j <= MDNIE_CMD2; j++) {
 		for (i = 1; i < table->tune[j].size; i++) {
@@ -501,7 +517,8 @@ static ssize_t tuning_correction_store(struct device *dev,
 has_corr:
 	save_correction_table(table);
 	mdnie_update_brightness(to_mdnie_device(dev), 0);
-	
+
+exit:	
 	return count;
 }
 
@@ -816,6 +833,7 @@ static int fb_notifier_callback(struct notifier_block *self,
 	if (fb_blank == FB_BLANK_UNBLANK) {
 		mutex_lock(&mdnie->lock);
 		mdnie->enable = 1;
+		mdnie->is_fb_notif_cb = true;
 		mutex_unlock(&mdnie->lock);
 
 		mdnie_update(mdnie);
