@@ -79,8 +79,8 @@
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
 #define GPU_MAX_CLK 677
-#define GPU_THROTTLING_90_95 677
-#define GPU_THROTTLING_95_100 533
+#define GPU_THROTTLING_90_95 533
+#define GPU_THROTTLING_95_100 480
 #define GPU_THROTTLING_100_105 350
 #define GPU_THROTTLING_105_110 177
 #define GPU_TRIPPING_110 100
@@ -231,52 +231,35 @@ void hlpr_set_gpu_gov_table(int gpu_table[])
  }
 }
 
+static int gov_table[10][10] = {
+	{ 100 },
+	{ 100, 50 },
+	{ 100, 67, 30 },
+	{ 100, 90, 70, 40 },
+	{ 100, 90, 70, 50, 30 },
+	{ 100, 75, 50, 30, 20, 20 },
+	{ 100, 90, 70, 50, 30, 20, 20 },
+	{ 100, 95, 90, 80, 65, 45, 30, 20 },
+	{ 100, 95, 90, 80, 70, 50, 30, 30, 20 },
+	{ 100, 95, 90, 80, 70, 50, 40, 30, 30, 20 },
+};
 
 void hlpr_set_min_max_G3D(unsigned int min, unsigned int max)
 {
- int i;
- int tbl0[1] = { 100 };
- int tbl1[2] = { 100, 50 };
- int tbl2[3] = { 100, 67, 30 };
- int tbl3[4] = { 100, 90, 70, 40 };
- int tbl4[5] = { 100, 90, 70, 60, 40 };
- int tbl5[6] = { 100, 90, 80, 70, 55, 40 };
- int tbl6[7] = { 100, 90, 80, 70, 60, 50, 40 };
- int tbl7[8] = { 100, 90, 85, 75, 65, 55, 50, 40 };
- int tbl8[9] = { 100, 90, 80, 70, 65, 60, 55, 50, 40 };
- int tbl9[10] = { 100, 90, 80, 70, 65, 60, 55, 50, 45, 40 };
+	int i;
 
- for (i = 0; i < MALI_DVFS_STEP; i++)
- {
- if (mali_dvfs_infotbl[i].clock == min)
- dvfs_step_min = i;
- if (mali_dvfs_infotbl[i].clock == max)
- {
- dvfs_step_max = i+1;
- dvfs_step_max_minus1 = mali_dvfs_infotbl[i-1].clock;
- }
- }
+	for (i = 0; i < MALI_DVFS_STEP; i++)
+	{
+		if (mali_dvfs_infotbl[i].clock == min)
+			dvfs_step_min = i;
+		if (mali_dvfs_infotbl[i].clock == max)
+		{
+			dvfs_step_max = i+1;
+			dvfs_step_max_minus1 = mali_dvfs_infotbl[i-1].clock;
+		}
+	}
 
- if (dvfs_step_max - dvfs_step_min == 1)
- hlpr_set_gpu_gov_table(tbl0);
- else if (dvfs_step_max - dvfs_step_min == 2)
- hlpr_set_gpu_gov_table(tbl1);
- else if (dvfs_step_max - dvfs_step_min == 3)
- hlpr_set_gpu_gov_table(tbl2);
- else if (dvfs_step_max - dvfs_step_min == 4)
- hlpr_set_gpu_gov_table(tbl3);
- else if (dvfs_step_max - dvfs_step_min == 5)
- hlpr_set_gpu_gov_table(tbl4);
- else if (dvfs_step_max - dvfs_step_min == 6)
- hlpr_set_gpu_gov_table(tbl5);
- else if (dvfs_step_max - dvfs_step_min == 7)
- hlpr_set_gpu_gov_table(tbl6);
- else if (dvfs_step_max - dvfs_step_min == 8)
- hlpr_set_gpu_gov_table(tbl7);
- else if (dvfs_step_max - dvfs_step_min == 9)
- hlpr_set_gpu_gov_table(tbl8);
- else if (dvfs_step_max - dvfs_step_min == 10)
- hlpr_set_gpu_gov_table(tbl9);
+	hlpr_set_gpu_gov_table(gov_table[dvfs_step_max - dvfs_step_min - 1]);
 }
 
 static int mali_dvfs_update_asv(int cmd)
@@ -575,6 +558,8 @@ int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
+	hlpr_set_min_max_G3D(MALI_DVFS_START_FREQ, MALI_DVFS_BL_CONFIG_FREQ);
+	
 	return MALI_TRUE;
 }
 

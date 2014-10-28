@@ -132,11 +132,11 @@
 #define HOT_110 105
 #define MEM_TH_TEMP1 65
 #define MEM_TH_TEMP2 75
-#define GPU_TH_TEMP1 70
-#define GPU_TH_TEMP2 75
-#define GPU_TH_TEMP3 80
-#define GPU_TH_TEMP4 85
-#define GPU_TH_TEMP5 90
+#define GPU_TH_TEMP1 40
+#define GPU_TH_TEMP2 50
+#define GPU_TH_TEMP3 60
+#define GPU_TH_TEMP4 70
+#define GPU_TH_TEMP5 75
 
 #define TYPE_CPU		1
 #define TYPE_GPU		2
