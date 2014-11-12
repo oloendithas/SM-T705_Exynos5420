@@ -160,6 +160,7 @@ struct lcd_info {
 
 static void s6e3ha1_enable_errfg(struct lcd_info *lcd);
 
+
 #ifdef CONFIG_FB_HW_TRIGGER
 static struct lcd_info *g_lcd;
 
@@ -168,24 +169,11 @@ int lcd_get_mipi_state(struct device *dsim_device)
 	struct lcd_info *lcd = g_lcd;
 
 	if (lcd->connected && !lcd->err_count)
-		return mutex_is_locked(&lcd->bl_lock);
+		return 0;
 	else
 		return -ENODEV;
 }
-
-static void s6e3ha1_hw_trigger_set(struct lcd_info *lcd, u32 enable)
-{
-	struct s5p_platform_mipi_dsim *pd = lcd->dsim->pd;
-
-	if (lcd->err_count && enable)
-		return;
-
-	if (pd->trigger_set && pd->fimd1_device)
-		pd->trigger_set(pd->fimd1_device, enable);
-}
 #endif
-
-
 int s6e3ha1_write(struct lcd_info *lcd, const u8 *seq, u32 len)
 {
 	int ret;
@@ -196,9 +184,6 @@ int s6e3ha1_write(struct lcd_info *lcd, const u8 *seq, u32 len)
 		return -EINVAL;
 
 	mutex_lock(&lcd->lock);
-#if defined(CONFIG_FB_HW_TRIGGER)
-		s6e3ha1_hw_trigger_set(lcd, 1);
-#endif
 
 	if (len > 2)
 		cmd = MIPI_DSI_DCS_LONG_WRITE;
@@ -1006,7 +991,7 @@ static int s6e3ha1_ldi_init(struct lcd_info *lcd)
 	/* 2.4 POC setting */
 	s6e3ha1_write(lcd, SEQ_GLOBAL_PARA_33rd, ARRAY_SIZE(SEQ_GLOBAL_PARA_33rd));
 	s6e3ha1_write(lcd, SEQ_POC_SETTING, ARRAY_SIZE(SEQ_POC_SETTING));
-
+	s6e3ha1_write(lcd, SEQ_SETUP_MARGIN, ARRAY_SIZE(SEQ_SETUP_MARGIN));
 
 	/* 3. Brightness Control */
 	/* 4. ELVSS Control */
@@ -1227,8 +1212,8 @@ static int s6e3ha1_fb_notifier_callback(struct notifier_block *self,
 			break;
 		case FB_BLANK_UNBLANK:
 			s6e3ha1_ldi_enable(lcd);
-			update_brightness(lcd, 0);
 			lcd->fb_unblank = 1;
+			update_brightness(lcd, 0);
 			break;
 		default:
 			break;

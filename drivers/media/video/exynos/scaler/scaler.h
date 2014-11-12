@@ -350,7 +350,6 @@ struct sc_dev {
 	struct clk			*pclk;
 	void __iomem			*regs;
 	struct resource			*regs_res;
-	struct pm_qos_request		qos_int;
 	wait_queue_head_t		wait;
 	unsigned long			state;
 	struct vb2_alloc_ctx		*alloc_ctx;
@@ -358,6 +357,12 @@ struct sc_dev {
 	spinlock_t			slock;
 	struct mutex			lock;
 	struct sc_wdt			wdt;
+	struct pm_qos_request		qos_int;
+	struct timer_list		pmqos_timer;
+	struct work_struct		pmqos_work;
+	struct workqueue_struct		*pmqos_wq;
+	struct mutex			pmqos_lock;
+	atomic_t			pmqos_count;
 	atomic_t			clk_cnt;
 	void				*clk_private;
 	void *(*setup_clocks)(void);

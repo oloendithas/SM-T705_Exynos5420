@@ -55,9 +55,9 @@
 #define REF_SENSOR               1
 #define CSX_STATUS_REG           SX9500_TCHCMPSTAT_TCHSTAT0_FLAG
 
-#define LIMIT_PROXOFFSET                3481 /* 40pF */
+#define LIMIT_PROXOFFSET                3880 /* 45 pF */
 #define LIMIT_PROXUSEFUL                10000
-#define STANDARD_CAP_MAIN               400000
+#define STANDARD_CAP_MAIN               450000
 
 #define DEFAULT_INIT_TOUCH_THRESHOLD    3000
 #define DEFAULT_NORMAL_TOUCH_THRESHOLD  17
@@ -65,6 +65,8 @@
 #define TOUCH_CHECK_REF_AMB      0 /* 44523 */
 #define TOUCH_CHECK_SLOPE        0 /* 50 */
 #define TOUCH_CHECK_MAIN_AMB     0 /* 151282 */
+
+#define DEFENCE_CODE_FOR_DEVICE_DAMAGE
 
 /* CS0, CS1, CS2, CS3 */
 #define TOTAL_BOTTON_COUNT       1
@@ -94,7 +96,7 @@ struct sx9500_p {
 	atomic_t enable;
 };
 
-#if defined(CONFIG_TARGET_LOCALE_USA) && defined(CONFIG_CHAGALL_LTE)
+#if defined(CONFIG_CHAGALL_LTE)
 #define SX9500_NORMAL_TOUCH_CABLE_THRESHOLD	22
 extern bool is_cable_attached;
 #endif
@@ -203,7 +205,7 @@ static int sx9500_set_offset_calibration(struct sx9500_p *data)
 static void send_event(struct sx9500_p *data, int cnt, u8 state)
 {
 	u8 buf;
-#if defined(CONFIG_TARGET_LOCALE_USA) && defined(CONFIG_CHAGALL_LTE)
+#if defined(CONFIG_CHAGALL_LTE)
 	if (is_cable_attached == true) {
 		buf = SX9500_NORMAL_TOUCH_CABLE_THRESHOLD;
 		pr_info("[SX9500]: %s - cable connected\n", __func__);
@@ -925,11 +927,22 @@ static void sx9500_touch_process(struct sx9500_p *data)
 	sx9500_i2c_read(data, SX9500_TCHCMPSTAT_REG, &status);
 	for (cnt = 0; cnt < TOTAL_BOTTON_COUNT; cnt++) {
 		if (data->state[cnt] == IDLE) {
-			if (status & (CSX_STATUS_REG << cnt))
+			if (status & (CSX_STATUS_REG << cnt)) {
+#ifdef DEFENCE_CODE_FOR_DEVICE_DAMAGE
+				if ((data->calData[0] - 5000) > capMain) {
+					sx9500_set_offset_calibration(data);
+					mdelay(400);
+					sx9500_touchCheckWithRefSensor(data);
+					pr_err("[SX9500]: %s - Defence code for"
+						" device damage\n", __func__);
+					return;
+				}
+#endif
 				send_event(data, cnt, ACTIVE);
-			else
+			} else {
 				pr_info("[SX9500]: %s - %d already released.\n",
 					__func__, cnt);
+			}
 		} else { /* User released button */
 			if (!(status & (CSX_STATUS_REG << cnt))) {
 				if ((data->touchMode == INIT_TOUCH_MODE)

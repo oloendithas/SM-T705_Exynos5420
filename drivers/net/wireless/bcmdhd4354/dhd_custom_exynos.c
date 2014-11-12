@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_custom_exynos.c 454079 2014-02-07 11:37:39Z $
+ * $Id: dhd_custom_exynos.c 487900 2014-06-27 10:26:47Z $
  */
 #include <linux/device.h>
 #include <linux/gpio.h>
@@ -75,6 +75,11 @@
 
 #define WLAN_SKB_BUF_NUM	17
 
+#if defined(CUSTOMER_HW4) && defined(ARGOS_CPU_SCHEDULER)
+extern int argos_irq_affinity_setup(unsigned int irq, int dev_num,
+                 struct cpumask *affinity_cpu_mask,
+                 struct cpumask *default_cpu_mask);
+#endif /* CUSTOMER_HW4 && ARGOS_CPU_SCHEDULER */
 static struct sk_buff *wlan_static_skb[WLAN_SKB_BUF_NUM];
 
 struct wlan_mem_prealloc {
@@ -168,14 +173,14 @@ static int dhd_init_wlan_mem(void)
 	return 0;
 
 err_mem_alloc:
-	if(wlan_static_scan_buf0)
-	 kfree(wlan_static_scan_buf0);
-	if(wlan_static_scan_buf1)
-	 kfree(wlan_static_scan_buf1);
-	if(wlan_static_dhd_info_buf)
-	 kfree(wlan_static_dhd_info_buf);
-
 	pr_err("Failed to mem_alloc for WLAN\n");
+	if (wlan_static_scan_buf0)
+		kfree(wlan_static_scan_buf0);
+	if (wlan_static_scan_buf1)
+		kfree(wlan_static_scan_buf1);
+	if (wlan_static_dhd_info_buf)
+		kfree(wlan_static_dhd_info_buf);
+
 	for (j = 0; j < i; j++)
 		kfree(wlan_mem_array[j].mem_ptr);
 
@@ -279,6 +284,19 @@ int __init dhd_wlan_init_gpio(void)
 
 	return 0;
 }
+
+#if defined(CUSTOMER_HW4) && defined(ARGOS_CPU_SCHEDULER)
+void set_cpucore_for_interrupt(cpumask_var_t default_cpu_mask,
+	cpumask_var_t affinity_cpu_mask) {
+#if defined(CONFIG_MACH_UNIVERSAL5422)
+	argos_irq_affinity_setup(EXYNOS5_IRQ_HSMMC1, 2, affinity_cpu_mask, default_cpu_mask);
+	argos_irq_affinity_setup(EXYNOS_IRQ_EINT16_31, 2, affinity_cpu_mask, default_cpu_mask);
+#elif defined(CONFIG_MACH_UNIVERSAL5430)
+	argos_irq_affinity_setup(IRQ_SPI(226), 2, affinity_cpu_mask, default_cpu_mask);
+	argos_irq_affinity_setup(IRQ_SPI(2), 2, affinity_cpu_mask, default_cpu_mask);
+#endif
+}
+#endif /* CUSTOMER_HW4 && ARGOS_CPU_SCHEDULER */
 
 void interrupt_set_cpucore(int set)
 {

@@ -495,6 +495,13 @@ void max77803_muic_usb_cb(u8 usb_mode)
 	} else if (usb_mode == USB_POWERED_HOST_ATTACHED) {
 #ifdef CONFIG_USB_HOST_NOTIFY
 		host_noti_pdata->powered_booster(1);
+
+		if (cable_type == CABLE_TYPE_MMDOCK_MUIC) {
+			enable_ovc(1);
+			host_state_notify(&host_noti_pdata->ndev,
+				NOTIFY_HOST_NONE);
+		}
+
 		if (cable_type == CABLE_TYPE_LANHUB_MUIC)
 		{
 			host_noti_pdata->ndev.mode = NOTIFY_HOST_MODE;
@@ -510,6 +517,11 @@ void max77803_muic_usb_cb(u8 usb_mode)
 		max77803_check_id_state(1);
 #ifdef CONFIG_USB_HOST_NOTIFY
 		host_noti_pdata->powered_booster(0);
+
+		if (cable_type == CABLE_TYPE_MMDOCK_MUIC) {
+			enable_ovc(0);
+		}
+
 		if (host_noti_pdata->ndev.mode == NOTIFY_HOST_MODE)
 		{
 			host_noti_pdata->ndev.mode = NOTIFY_NONE_MODE;

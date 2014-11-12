@@ -125,7 +125,6 @@ void gsc_op_timer_handler(unsigned long arg)
 
 	clear_bit(ST_M2M_RUN, &gsc->state);
 	pm_runtime_put(&gsc->pdev->dev);
-	gsc->runtime_put_cnt++;
 
 	src_vb = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
 	dst_vb = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx);
@@ -150,29 +149,11 @@ static void gsc_m2m_device_run(void *priv)
 
 	gsc = ctx->gsc_dev;
 
-	if (!in_irq()) {
-		pm_runtime_get_sync(&gsc->pdev->dev);
-		gsc->runtime_get_cnt++;
-	} else {
+	if (in_irq())
 		pm_runtime_get(&gsc->pdev->dev);
-		gsc->runtime_get_cnt++;
-		gsc_info("irq context");
-	}
+	else
+		pm_runtime_get_sync(&gsc->pdev->dev);
 
-#ifdef CONFIG_SOC_EXYNOS5420
-	if (!(readl(EXYNOS5_CLKSRC_TOP5) & (1 << 28))) {
-		if (clk_set_parent(gsc->clock[CLK_CHILD],
-			gsc->clock[CLK_PARENT])) {
-			u32 reg = readl(EXYNOS5_CLKSRC_TOP5);
-			reg |= (1 << 28);
-			writel(reg, EXYNOS5_CLKSRC_TOP5);
-			gsc_err("Unable to set parent of gsc");
-		}
-		gsc_err("get_cnt : %d, put_cnt : %d",
-			gsc->runtime_get_cnt, gsc->runtime_put_cnt);
-		gsc_err("state : 0x%lx", gsc->state);
-	}
-#endif
 	spin_lock_irqsave(&ctx->slock, flags);
 	/* Reconfigure hardware if the context has changed. */
 	if (gsc->m2m.ctx != ctx) {
@@ -255,7 +236,7 @@ static void gsc_m2m_device_run(void *priv)
 			goto put_device;
 		}
 		gsc->op_timer.expires = (jiffies + 2 * HZ);
-		add_timer(&gsc->op_timer);
+		mod_timer(&gsc->op_timer, gsc->op_timer.expires);
 	}
 
 	spin_unlock_irqrestore(&ctx->slock, flags);

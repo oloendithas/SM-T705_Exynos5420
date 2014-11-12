@@ -35,7 +35,7 @@
 
 
 /* definitions */
-#define	SEC_SIZEOF_POWER_SUPPLY_TYPE	17
+#define	SEC_SIZEOF_POWER_SUPPLY_TYPE	POWER_SUPPLY_TYPE_MAX
 
 enum sec_battery_voltage_mode {
 	/* average voltage */
@@ -530,6 +530,9 @@ struct sec_battery_platform_data {
 	int capacity_max;
 	int capacity_max_margin;
 	int capacity_min;
+
+	/* MTBF test for CMCC */
+	bool is_hc_usb;
 
 	/* charger */
 	char *charger_name;

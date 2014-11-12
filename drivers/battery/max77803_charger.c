@@ -95,6 +95,9 @@ struct max77803_charger_data {
 #endif
 	int		soft_reg_recovery_cnt;
 
+#if defined(CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK)
+	bool is_mdock;
+#endif
 	int pmic_ver;
 	int input_curr_limit_step;
 	int wpc_input_curr_limit_step;
@@ -915,11 +918,19 @@ static int sec_chg_set_property(struct power_supply *psy,
 				| CHG_CNFG_00_DIS_MUIC_CTRL_MASK;
 
 			if (value.intval) {
+#if defined(CONFIG_CHAGALL)
+				max77803_update_reg(charger->max77803->i2c, MAX77803_CHG_REG_CHG_CNFG_02,
+					(1 << 7), (1 << 7));
+#endif
 				max77803_update_reg(charger->max77803->i2c, MAX77803_CHG_REG_CHG_CNFG_00,
 					en_chg_cnfg_00, mask_chg_cnfg_00);
 
 				pr_info("%s: ps enable\n", __func__);
 			} else {
+#if defined(CONFIG_CHAGALL)
+				max77803_update_reg(charger->max77803->i2c, MAX77803_CHG_REG_CHG_CNFG_02,
+					0, (1 << 7));
+#endif
 				max77803_update_reg(charger->max77803->i2c, MAX77803_CHG_REG_CHG_CNFG_00,
 					dis_chg_cnfg_00, mask_chg_cnfg_00);
 
@@ -937,6 +948,11 @@ static int sec_chg_set_property(struct power_supply *psy,
 		if (val->intval == POWER_SUPPLY_TYPE_BATTERY) {
 			charger->is_charging = false;
 			charger->soft_reg_recovery_cnt = 0;
+
+#if defined(CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK)
+			charger->is_mdock = false;
+#endif
+
 			set_charging_current = 0;
 			set_charging_current_max =
 				charger->pdata->charging_current[
@@ -954,6 +970,36 @@ static int sec_chg_set_property(struct power_supply *psy,
 			}
 		} else {
 			charger->is_charging = true;
+
+			if ((charger->cable_type == POWER_SUPPLY_TYPE_USB)
+				&& (charger->pdata->is_hc_usb)) {
+				pr_info("%s: high current usb setting\n", __func__);
+
+				charger->charging_current = charger->pdata->charging_current[
+					POWER_SUPPLY_TYPE_MAINS].fast_charging_current;
+				charger->charging_current_max =	charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MAINS].input_current_limit;
+			}
+
+#if defined(CONFIG_MUIC_SUPPORT_MULTIMEDIA_DOCK)
+			if (charger->is_mdock) { /* if mdock was already inserted, then check OTG, or NOTG state */
+				if (charger->cable_type == POWER_SUPPLY_TYPE_SMART_NOTG) {
+					charger->charging_current = charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MDOCK_TA].fast_charging_current;
+					charger->charging_current_max = charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MDOCK_TA].input_current_limit;
+				} else if (charger->cable_type == POWER_SUPPLY_TYPE_SMART_OTG) {
+					charger->charging_current = charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MDOCK_TA].fast_charging_current - 500;
+					charger->charging_current_max = charger->pdata->charging_current[
+						POWER_SUPPLY_TYPE_MDOCK_TA].input_current_limit - 500;
+				}
+			} else { /* if mdock wasn't inserted, then check mdock state */
+				if (charger->cable_type == POWER_SUPPLY_TYPE_MDOCK_TA)
+					charger->is_mdock = true;
+			}
+#endif
+
 			/* decrease the charging current according to siop level */
 			set_charging_current =
 				charger->charging_current * charger->siop_level / 100;
@@ -1272,22 +1318,28 @@ static irqreturn_t max77803_bypass_irq(int irq, void *data)
 	/* check and unlock */
 	check_charger_unlock_state(chg_data);
 
+	/* Due to timing issue, 0xB5 reg should be read at first to detect overcurrent limit.
+	*  If 0xB5's read after 0XB3, 0xB4, it's value is 0x00 even for the overcurrent limit case.
+	*/
+	max77803_read_reg(chg_data->max77803->i2c,
+				MAX77803_CHG_REG_CHG_DTLS_02,
+				&dtls_02);
+	pr_info("%s: CHG_DTLS_02(0xb5) = 0x%x\n", __func__, dtls_02);
+
 	max77803_read_reg(chg_data->max77803->i2c,
 				MAX77803_CHG_REG_CHG_DTLS_00,
 				&chgin_dtls);
 	max77803_read_reg(chg_data->max77803->i2c,
-					MAX77803_CHG_REG_CHG_DTLS_01, &chg_dtls);
-		chgin_dtls = ((chgin_dtls & MAX77803_CHGIN_DTLS) >>
+				MAX77803_CHG_REG_CHG_DTLS_01, &chg_dtls);
+	chgin_dtls = ((chgin_dtls & MAX77803_CHGIN_DTLS) >>
 				MAX77803_CHGIN_DTLS_SHIFT);
-		chg_dtls = ((chg_dtls & MAX77803_CHG_DTLS) >>
+	chg_dtls = ((chg_dtls & MAX77803_CHG_DTLS) >>
 				MAX77803_CHG_DTLS_SHIFT);
-	max77803_read_reg(chg_data->max77803->i2c,
-				MAX77803_CHG_REG_CHG_DTLS_02,
-				&dtls_02);
 
 	byp_dtls = ((dtls_02 & MAX77803_BYP_DTLS) >>
 				MAX77803_BYP_DTLS_SHIFT);
-	pr_info("%s: BYP_DTLS(0x%02x)\n", __func__, byp_dtls);
+	pr_info("%s: BYP_DTLS(0x%02x), chgin_dtls(0x%02x), chg_dtls(0x%02x)\n",
+		__func__, byp_dtls, chgin_dtls, chg_dtls);
 	vbus_state = max77803_get_vbus_state(chg_data);
 
 	if (byp_dtls & 0x1) {

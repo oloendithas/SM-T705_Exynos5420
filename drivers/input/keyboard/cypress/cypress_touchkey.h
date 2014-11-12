@@ -64,7 +64,7 @@
 #define TK_RUN_CHK 3
 
 /* Flip cover*/
-#if defined(CONFIG_GLOVE_TOUCH)
+#if defined(CONFIG_GLOVE_TOUCH) && defined(CONFIG_KLIMT)
 #define TKEY_FLIP_MODE
 #endif
 

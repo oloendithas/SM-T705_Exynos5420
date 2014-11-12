@@ -554,11 +554,11 @@ static int sdcardfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		goto out_err;
 
 	/* Copy attrs from lower dir, but i_uid/i_gid */
-	fsstack_copy_attr_all(new_dir, lower_new_dir_dentry->d_inode);
+	sdcardfs_copy_inode_attr(new_dir, lower_new_dir_dentry->d_inode);
 	fsstack_copy_inode_size(new_dir, lower_new_dir_dentry->d_inode);
-	fix_derived_permission(new_dir); 
+	fix_derived_permission(new_dir);
 	if (new_dir != old_dir) {
-		fsstack_copy_attr_all(old_dir, lower_old_dir_dentry->d_inode);
+		sdcardfs_copy_inode_attr(old_dir, lower_old_dir_dentry->d_inode);
 		fsstack_copy_inode_size(old_dir, lower_old_dir_dentry->d_inode);
 		fix_derived_permission(old_dir);
 		/* update the derived permission of the old_dentry
@@ -724,13 +724,16 @@ static int sdcardfs_getattr(struct vfsmount *mnt, struct dentry *dentry,
 	lower_dentry = lower_path.dentry;
 	lower_inode = sdcardfs_lower_inode(inode);
 
-	fsstack_copy_attr_all(inode, lower_inode);
+	/* need to get inode->i_mutex */
+	mutex_lock(&inode->i_mutex);
+	sdcardfs_copy_inode_attr(inode, lower_inode);
 	fsstack_copy_inode_size(inode, lower_inode);
 	/* if the dentry has been moved from other location
-	 * so, on this stage, its derived permission must be 
+	 * so, on this stage, its derived permission must be
 	 * rechecked from its private field.
-	 */ 
+	 */
 	fix_derived_permission(inode);
+	mutex_unlock(&inode->i_mutex);
 
 	generic_fillattr(inode, stat);
 	sdcardfs_put_lower_path(dentry, &lower_path);
@@ -828,11 +831,11 @@ static int sdcardfs_setattr(struct dentry *dentry, struct iattr *ia)
 	if (err)
 		goto out;
 
-	/* get attributes from the lower inode */
-	fsstack_copy_attr_all(inode, lower_inode);
+	/* get attributes from the lower inode, i_mutex held */
+	sdcardfs_copy_inode_attr(inode, lower_inode);
 	/* update derived permission of the upper inode */
 	fix_derived_permission(inode);
-	
+
 	/*
 	 * Not running fsstack_copy_inode_size(inode, lower_inode), because
 	 * VFS should update our inode size, and notify_change on

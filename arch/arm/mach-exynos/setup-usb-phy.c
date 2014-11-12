@@ -1330,6 +1330,12 @@ static int exynos5_check_usb_op(void)
 		hsic_ctrl1 & HSIC_CTRL_FORCESUSPEND &&
 		hsic_ctrl2 & HSIC_CTRL_FORCESUSPEND) {
 #if defined(CONFIG_LINK_DEVICE_HSIC) || defined(CONFIG_MDM_HSIC_PM)
+		if (is_cp_wait_for_resume()) {
+			pr_info("%s: fail to enter LPA by HWK irq\n", __func__);
+			op = 1;
+			goto done;
+		}
+
 		/* HSIC LPA: LPA USB phy retention reume call the usb
 		 * reset resume, so we should let CP to HSIC L3 mode. */
 		usb2phy_notifier(STATE_HSIC_LPA_ENTER, NULL);

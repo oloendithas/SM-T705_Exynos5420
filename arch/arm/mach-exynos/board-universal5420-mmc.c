@@ -587,7 +587,7 @@ static struct dw_mci_board universal5420_dwmci2_pdata __initdata = {
 				  MMC_CAP_4_BIT_DATA |
 				  MMC_CAP_SD_HIGHSPEED |
 				  MMC_CAP_MMC_HIGHSPEED |
-#if defined(CONFIG_N1A) || defined(CONFIG_N2A)
+#if defined(CONFIG_N1A) || defined(CONFIG_N2A) || defined(CONFIG_CHAGALL)
 				  MMC_CAP_UHS_SDR50,
 #else
 				  MMC_CAP_UHS_SDR50 |
@@ -600,7 +600,7 @@ static struct dw_mci_board universal5420_dwmci2_pdata __initdata = {
 	.cfg_gpio		= exynos_dwmci2_cfg_gpio,
 	.get_bus_wd		= exynos_dwmci2_get_bus_wd,
 	.save_drv_st	= exynos_dwmci_save_drv_st,
-	.restore_drv_st	= exynos_dwmci_restore_drv_st_with_compensation,
+	.restore_drv_st	= exynos_dwmci_restore_drv_st,
 	.tuning_drv_st	= exynos_dwmci_tuning_drv_st,
 	.sdr_timing		= 0x03040000,
 	.ddr_timing		= 0x03020000,

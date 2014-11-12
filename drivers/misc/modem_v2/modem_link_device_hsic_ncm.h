@@ -87,6 +87,7 @@ struct if_usb_devdata {
 
 	struct urb *intr_urb;
 	unsigned int rx_buf_size;
+	unsigned int rx_buf_setup;
 	enum ch_state state;
 
 	struct usb_id_info *info;
@@ -104,9 +105,6 @@ struct if_usb_devdata {
 	struct net_device *ndev;
 	int net_suspend;
 	bool net_connected;
-
-	bool defered_rx;
-	struct delayed_work rx_defered_work;
 
 	struct mif_skb_pool *ntb_pool;
 
