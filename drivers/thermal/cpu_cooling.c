@@ -29,6 +29,7 @@
 #include <linux/slab.h>
 #include <linux/cpu.h>
 #include <linux/cpu_cooling.h>
+#include <linux/hrtimer.h>
 
 /**
  * struct cpufreq_cooling_device
@@ -178,6 +179,10 @@ static int is_cpufreq_valid(int cpu)
  *	clipping data.
  * @cooling_state: value of the cooling state.
  */
+ 
+s64 state_up_delay_ms = 5000000000;
+s64 last_state_up_timestamp;
+
 static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 				unsigned long cooling_state)
 {
@@ -185,7 +190,8 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 	struct freq_clip_table *th_table, *table_ptr;
 	const struct cpumask *maskPtr = &cpufreq_device->allowed_cpus;
 	struct cpufreq_cooling_device *cpufreq_ptr;
-
+	unsigned int shift = 0;
+	
 	if (cooling_state > cpufreq_device->tab_size)
 		return -EINVAL;
 
@@ -193,6 +199,33 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 	if (cpufreq_device->cpufreq_state == cooling_state)
 		return 0;
 
+	shift = cooling_state - cpufreq_device->cpufreq_state;
+//	pr_info("cpufreq_apply_cooling: prev_state=%u, cooling_state=%lu, tab_size=%u, shift=%u, last_state_up_timestamp=%lli\n",
+//				cpufreq_device->cpufreq_state, cooling_state, cpufreq_device->tab_size, shift, last_state_up_timestamp);
+	
+	if (shift == 1) {
+		if (last_state_up_timestamp == 0) {
+			last_state_up_timestamp = ktime_get_boottime().tv64;
+//			pr_info("cpufreq_apply_cooling: last_state_up_timestamp=%lli\n", last_state_up_timestamp);
+			return 0;
+		} else {
+			s64 elapsed;
+			s64 curr_time = ktime_get_boottime().tv64;
+			elapsed = curr_time - last_state_up_timestamp;
+			
+//			pr_info("cpufreq_apply_cooling: last_state_up_timestamp=%lli, curr_time=%lli, elapsed=%lli\n", 
+//					last_state_up_timestamp, curr_time, elapsed);
+			if (elapsed < state_up_delay_ms) {
+//				pr_info("cpufreq_apply_cooling: skip run\n");
+				return 0;
+			}
+		}
+	} else if (shift == 2) 
+		cooling_state--;
+		
+	last_state_up_timestamp = 0;
+//	pr_info("cpufreq_apply_cooling: normal run, cooling_state=%lu\n", cooling_state);
+	
 	/*pass cooling table info to the cpufreq_thermal_notifier callback*/
 	notify_table = NOTIFY_INVALID;
 
