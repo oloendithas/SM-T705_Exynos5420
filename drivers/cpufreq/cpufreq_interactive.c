@@ -32,8 +32,6 @@
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
 
-#define CREATE_TRACE_POINTS
-#include <trace/events/cpufreq_interactive.h>
 #define CONFIG_MODE_AUTO_CHANGE
 
 static int active_count;
@@ -65,6 +63,7 @@ static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
 
 /* Hi speed to bump to from lo speed when load burst (default max) */
+#define DEFAULT_HISPEED 1900000
 static unsigned int hispeed_freq;
 
 /* Go to hi speed when CPU load at or above this value. */
@@ -76,7 +75,8 @@ static unsigned int sampling_down_factor;
 
 /* Target load.  Lower values result in higher CPU speeds. */
 #define DEFAULT_TARGET_LOAD 90
-static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
+static unsigned int default_target_loads[] = 
+		{ 90, 400000, 80, 650000, 50, 800000, 70, 1200000, 80, 1500000, 90, 1700000, 99 };
 static spinlock_t target_loads_lock;
 static unsigned int *target_loads = default_target_loads;
 static int ntarget_loads = ARRAY_SIZE(default_target_loads);
@@ -98,8 +98,8 @@ static unsigned long timer_rate = DEFAULT_TIMER_RATE;
  * timer interval.
  */
 #define DEFAULT_ABOVE_HISPEED_DELAY DEFAULT_TIMER_RATE
-static unsigned int default_above_hispeed_delay[] = {
-	DEFAULT_ABOVE_HISPEED_DELAY };
+static unsigned int default_above_hispeed_delay[] = 
+		{ DEFAULT_ABOVE_HISPEED_DELAY, 800000, DEFAULT_TIMER_RATE * 2, DEFAULT_HISPEED, DEFAULT_TIMER_RATE };
 static spinlock_t above_hispeed_delay_lock;
 static unsigned int *above_hispeed_delay = default_above_hispeed_delay;
 static int nabove_hispeed_delay = ARRAY_SIZE(default_above_hispeed_delay);
@@ -118,7 +118,7 @@ static u64 boostpulse_endtime;
 #define DEFAULT_TIMER_SLACK (4 * DEFAULT_TIMER_RATE)
 static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
-static bool io_is_busy;
+static bool io_is_busy = 1;
 
 #ifdef CONFIG_MODE_AUTO_CHANGE
 struct cpufreq_loadinfo {
@@ -449,11 +449,9 @@ static unsigned int check_mode(int cpu, unsigned int cur_mode, u64 now)
 
 	for_each_online_cpu(i) {
 		cur_loadinfo = &per_cpu(loadinfo, i);
-		//if (now - cur_loadinfo->timestamp <= timer_rate) {
-			total_load += cur_loadinfo->load;
-			if (cur_loadinfo->load > max_single_load)
-				max_single_load = cur_loadinfo->load;
-		//}
+		total_load += cur_loadinfo->load;
+		if (cur_loadinfo->load > max_single_load)
+			max_single_load = cur_loadinfo->load;
 	}
 
 	if (!(cur_mode & SINGLE_MODE)) {
@@ -495,10 +493,6 @@ static unsigned int check_mode(int cpu, unsigned int cur_mode, u64 now)
 		if (time_in_multi_exit >= multi_exit_time)
 			ret &= ~MULTI_MODE;
 	}
-
-	trace_cpufreq_interactive_mode(cpu, total_load,
-		time_in_single_enter, time_in_multi_enter,
-		time_in_single_exit, time_in_multi_exit, ret);
 
 	if (time_in_single_enter >= single_enter_time)
 		time_in_single_enter = 0;
@@ -617,9 +611,6 @@ static void cpufreq_interactive_timer(unsigned long data)
 	    new_freq > pcpu->target_freq &&
 	    now - pcpu->hispeed_validate_time <
 	    freq_to_above_hispeed_delay(pcpu->target_freq)) {
-		trace_cpufreq_interactive_notyet(
-			data, cpu_load, pcpu->target_freq,
-			pcpu->policy->cur, new_freq);
 		goto rearm;
 	}
 
@@ -638,9 +629,6 @@ static void cpufreq_interactive_timer(unsigned long data)
 	 */
 	if (new_freq < pcpu->floor_freq) {
 		if (now - pcpu->floor_validate_time < min_sample_time) {
-			trace_cpufreq_interactive_notyet(
-				data, cpu_load, pcpu->target_freq,
-				pcpu->policy->cur, new_freq);
 			goto rearm;
 		}
 	}
@@ -659,14 +647,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 	}
 
 	if (pcpu->target_freq == new_freq) {
-		trace_cpufreq_interactive_already(
-			data, cpu_load, pcpu->target_freq,
-			pcpu->policy->cur, new_freq);
 		goto rearm_if_notmax;
 	}
-
-	trace_cpufreq_interactive_target(data, cpu_load, pcpu->target_freq,
-					 pcpu->policy->cur, new_freq);
 
 	pcpu->target_freq = new_freq;
 	spin_lock_irqsave(&speedchange_cpumask_lock, flags);
@@ -801,9 +783,6 @@ static int cpufreq_interactive_speedchange_task(void *data)
 				__cpufreq_driver_target(pcpu->policy,
 							max_freq,
 							CPUFREQ_RELATION_H);
-			trace_cpufreq_interactive_setspeed(cpu,
-						     pcpu->target_freq,
-						     pcpu->policy->cur);
 
 			up_read(&pcpu->enable_sem);
 		}
@@ -1109,6 +1088,7 @@ static struct global_attr hispeed_freq_attr = __ATTR(hispeed_freq, 0644,
 		show_hispeed_freq, store_hispeed_freq);
 
 
+
 static ssize_t show_go_hispeed_load(struct kobject *kobj,
 				     struct attribute *attr, char *buf)
 {
@@ -1258,13 +1238,6 @@ static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
 
 	boost_val = val;
 
-	if (boost_val) {
-		trace_cpufreq_interactive_boost("on");
-		cpufreq_interactive_boost();
-	} else {
-		trace_cpufreq_interactive_unboost("off");
-	}
-
 	return count;
 }
 
@@ -1281,7 +1254,6 @@ static ssize_t store_boostpulse(struct kobject *kobj, struct attribute *attr,
 		return ret;
 
 	boostpulse_endtime = ktime_to_us(ktime_get()) + boostpulse_duration_val;
-	trace_cpufreq_interactive_boost("pulse");
 	cpufreq_interactive_boost();
 	return count;
 }
@@ -1552,12 +1524,12 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		freq_table =
 			cpufreq_frequency_get_table(policy->cpu);
 		if (!hispeed_freq)
-			hispeed_freq = policy->max;
+			hispeed_freq = DEFAULT_HISPEED;
 
 #ifdef CONFIG_MODE_AUTO_CHANGE
 	        for (j=0 ; j<MAX_PARAM_SET ; j++)
 			if (!hispeed_freq_set[j])
-				hispeed_freq_set[j] = policy->max;
+				hispeed_freq_set[j] = DEFAULT_HISPEED;
 #endif
 		for_each_cpu(j, policy->cpus) {
 			pcpu = &per_cpu(cpuinfo, j);
