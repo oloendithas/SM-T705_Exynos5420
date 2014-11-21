@@ -52,6 +52,7 @@ struct cpufreq_interactive_cpuinfo {
 	u64 hispeed_validate_time;
 	struct rw_semaphore enable_sem;
 	int governor_enabled;
+	unsigned int two_phase_freq;
 };
 
 static DEFINE_PER_CPU(struct cpufreq_interactive_cpuinfo, cpuinfo);
@@ -174,6 +175,8 @@ static unsigned int *above_hispeed_delay_set[MAX_PARAM_SET];
 static int nabove_hispeed_delay_set[MAX_PARAM_SET];
 static unsigned int sampling_down_factor_set[MAX_PARAM_SET];
 #endif /* CONFIG_MODE_AUTO_CHANGE */
+
+static int two_phase_freq_array[NR_CPUS] = {[0 ... NR_CPUS-1] = 650000} ;
 
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event);
@@ -558,6 +561,9 @@ static void cpufreq_interactive_timer(unsigned long data)
 	unsigned int index;
 	unsigned long flags;
 	bool boosted;
+	static unsigned int phase = 0;
+	static unsigned int counter = 0;
+	unsigned int nr_cpus;
 #ifdef CONFIG_MODE_AUTO_CHANGE
 	unsigned int new_mode;
 #endif
@@ -595,8 +601,24 @@ static void cpufreq_interactive_timer(unsigned long data)
 	boosted = boost_val || now < boostpulse_endtime;
 
 	if (cpu_load >= go_hispeed_load || boosted) {
+	
+		if (counter < 5) {
+			counter++;
+			if (counter > 2) {
+				phase = 1;
+			}
+		}
+
 		if (pcpu->target_freq < hispeed_freq) {
-			new_freq = hispeed_freq;
+			nr_cpus = num_online_cpus();
+			
+			pcpu->two_phase_freq = two_phase_freq_array[nr_cpus-1];
+			if (pcpu->two_phase_freq < pcpu->policy->cur)
+				phase = 1;
+			if (pcpu->two_phase_freq != 0 && phase == 0) {
+				new_freq = pcpu->two_phase_freq;
+			} else
+				new_freq = hispeed_freq;
 		} else {
 			new_freq = choose_freq(pcpu, loadadjfreq);
 
@@ -605,6 +627,13 @@ static void cpufreq_interactive_timer(unsigned long data)
 		}
 	} else {
 		new_freq = choose_freq(pcpu, loadadjfreq);
+	}
+
+	if (counter > 0) {
+		counter--;
+		if (counter == 0) {
+			phase = 0;
+		}
 	}
 
 	if (pcpu->target_freq >= hispeed_freq &&
@@ -914,6 +943,41 @@ err_kfree:
 err:
 	return ERR_PTR(err);
 }
+
+static ssize_t show_two_phase_freq
+(struct kobject *kobj, struct attribute *attr, char *buf)
+{
+	int i = 0 ;
+	int shift = 0 ;
+	char *buf_pos = buf;
+	for ( i = 0 ; i < NR_CPUS; i++) {
+		shift = sprintf(buf_pos,"%d,",two_phase_freq_array[i]);
+		buf_pos += shift;
+	}
+	*(buf_pos-1) = '\0';
+	return strlen(buf);
+}
+static ssize_t store_two_phase_freq(struct kobject *a, struct attribute *b,
+const char *buf, size_t count)
+{
+	int ret = 0;
+	if (NR_CPUS == 1)
+		ret = sscanf(buf,"%u",&two_phase_freq_array[0]);
+	else if (NR_CPUS == 2)
+		ret = sscanf(buf,"%u,%u",&two_phase_freq_array[0],
+		&two_phase_freq_array[1]);
+	else if (NR_CPUS == 4)
+		ret = sscanf(buf, "%u,%u,%u,%u", &two_phase_freq_array[0],
+	&two_phase_freq_array[1],
+	&two_phase_freq_array[2],
+	&two_phase_freq_array[3]);
+	if (ret < NR_CPUS)
+		return -EINVAL;
+	return count;
+}
+static struct global_attr two_phase_freq_attr =
+__ATTR(two_phase_freq, S_IRUGO | S_IWUSR,
+show_two_phase_freq, store_two_phase_freq);
 
 static ssize_t show_target_loads(
 	struct kobject *kobj, struct attribute *attr, char *buf)
@@ -1440,6 +1504,7 @@ static struct attribute *interactive_attributes[] = {
 	&boostpulse.attr,
 	&boostpulse_duration.attr,
 	&io_is_busy_attr.attr,
+	&two_phase_freq_attr.attr,
 #ifdef CONFIG_MODE_AUTO_CHANGE
 	&mode_attr.attr,
 	&enforced_mode_attr.attr,
