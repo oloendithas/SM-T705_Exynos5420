@@ -38,7 +38,7 @@
 #define MAJOR_VERSION	1
 #define MINOR_VERSION	6
 
-#define POWER_SUSPEND_DEBUG // Add debugging prints in dmesg
+//#define POWER_SUSPEND_DEBUG // Add debugging prints in dmesg
 
 struct workqueue_struct *suspend_work_queue;
 
