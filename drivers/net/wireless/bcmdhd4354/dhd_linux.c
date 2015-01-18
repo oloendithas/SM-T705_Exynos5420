@@ -230,19 +230,9 @@ print_tainted()
 extern wl_iw_extra_params_t  g_wl_iw_params;
 #endif /* defined(WL_WIRELESS_EXT) */
 
-#if defined(CUSTOMER_HW4) && defined(CONFIG_PARTIALSUSPEND_SLP)
-#include <linux/partialsuspend_slp.h>
-#define CONFIG_HAS_EARLYSUSPEND
-#define DHD_USE_EARLYSUSPEND
-#define register_early_suspend		register_pre_suspend
-#define unregister_early_suspend	unregister_pre_suspend
-#define early_suspend				pre_suspend
-#define EARLY_SUSPEND_LEVEL_BLANK_SCREEN		50
-#else
 #if defined(CONFIG_POWERSUSPEND) && defined(DHD_USE_POWERSUSPEND)
 #include <linux/powersuspend.h>
 #endif /* defined(CONFIG_POWERSUSPEND) && defined(DHD_USE_POWERSUSPEND) */
-#endif /* CUSTOMER_HW4 && CONFIG_PARTIALSUSPEND_SLP */
 
 extern int dhd_get_suspend_bcn_li_dtim(dhd_pub_t *dhd);
 
@@ -986,12 +976,7 @@ int power_mode = PM_MAX;
 				DHD_ERROR(("%s: force extra Suspend setting \n", __FUNCTION__));
 #ifdef CONFIG_BCMDHD_WIFI_PM
 				dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode, sizeof(power_mode), TRUE, 0);
-#else
-#ifndef SUPPORT_PM2_ONLY
-				dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
-				                 sizeof(power_mode), TRUE, 0);
-#endif /* SUPPORT_PM2_ONLY */
-#endif
+#endif /* CONFIG_BCMDHD_WIFI_PM */
 				/* Enable packet filter, only allow unicast packet to send up */
 				dhd_enable_packet_filter(1, dhd);
 
@@ -1065,15 +1050,11 @@ int power_mode = PM_MAX;
 					DHD_ERROR(("failed to set intr_width (%d)\n", ret));
 #endif /* DYNAMIC_SWOOB_DURATION */
 
-#ifndef SUPPORT_PM2_ONLY
 				power_mode = PM_FAST;
-				dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
-				                 sizeof(power_mode), TRUE, 0);
-#endif 
+
 #ifdef CONFIG_BCMDHD_WIFI_PM
 				dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode, sizeof(power_mode), TRUE, 0);
-#else
-#endif /* SUPPORT_PM2_ONLY */
+#endif /* CONFIG_BCMDHD_WIFI_PM */
 #ifdef PKT_FILTER_SUPPORT
 				/* disable pkt filter */
 				dhd_enable_packet_filter(0, dhd);
@@ -6927,10 +6908,10 @@ int dhd_os_wake_lock_timeout(dhd_pub_t *pub)
 #ifdef CONFIG_HAS_WAKELOCK
 		if (dhd->wakelock_rx_timeout_enable)
 			wake_lock_timeout(&dhd->wl_rxwake,
-				msecs_to_jiffies(dhd->wakelock_rx_timeout_enable)/4);
+				msecs_to_jiffies(dhd->wakelock_rx_timeout_enable));
 		if (dhd->wakelock_ctrl_timeout_enable)
 			wake_lock_timeout(&dhd->wl_ctrlwake,
-				msecs_to_jiffies(dhd->wakelock_ctrl_timeout_enable)/4);
+				msecs_to_jiffies(dhd->wakelock_ctrl_timeout_enable));
 #endif
 		dhd->wakelock_rx_timeout_enable = 0;
 		dhd->wakelock_ctrl_timeout_enable = 0;
