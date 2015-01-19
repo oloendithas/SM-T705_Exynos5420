@@ -32,7 +32,7 @@
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
 
-#define CONFIG_MODE_AUTO_CHANGE
+#undef CONFIG_MODE_AUTO_CHANGE
 
 static int active_count;
 
@@ -52,7 +52,6 @@ struct cpufreq_interactive_cpuinfo {
 	u64 hispeed_validate_time;
 	struct rw_semaphore enable_sem;
 	int governor_enabled;
-	unsigned int two_phase_freq;
 };
 
 static DEFINE_PER_CPU(struct cpufreq_interactive_cpuinfo, cpuinfo);
@@ -76,8 +75,7 @@ static unsigned int sampling_down_factor;
 
 /* Target load.  Lower values result in higher CPU speeds. */
 #define DEFAULT_TARGET_LOAD 90
-static unsigned int default_target_loads[] = 
-		{ 90, 400000, 80, 650000, 50, 800000, 70, 1200000, 80, 1500000, 90, 1700000, 99 };
+static unsigned int default_target_loads[] = { DEFAULT_TARGET_LOAD };
 static spinlock_t target_loads_lock;
 static unsigned int *target_loads = default_target_loads;
 static int ntarget_loads = ARRAY_SIZE(default_target_loads);
@@ -176,7 +174,7 @@ static int nabove_hispeed_delay_set[MAX_PARAM_SET];
 static unsigned int sampling_down_factor_set[MAX_PARAM_SET];
 #endif /* CONFIG_MODE_AUTO_CHANGE */
 
-static int two_phase_freq_array[NR_CPUS] = {[0 ... NR_CPUS-1] = 650000} ;
+static unsigned int two_phase_freq = 650000;
 
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event);
@@ -612,11 +610,10 @@ static void cpufreq_interactive_timer(unsigned long data)
 		if (pcpu->target_freq < hispeed_freq) {
 			nr_cpus = num_online_cpus();
 			
-			pcpu->two_phase_freq = two_phase_freq_array[nr_cpus-1];
-			if (pcpu->two_phase_freq < pcpu->policy->cur)
+			if (two_phase_freq < pcpu->policy->cur)
 				phase = 1;
-			if (pcpu->two_phase_freq != 0 && phase == 0) {
-				new_freq = pcpu->two_phase_freq;
+			if (two_phase_freq != 0 && phase == 0) {
+				new_freq = two_phase_freq;
 			} else
 				new_freq = hispeed_freq;
 		} else {
@@ -950,10 +947,8 @@ static ssize_t show_two_phase_freq
 	int i = 0 ;
 	int shift = 0 ;
 	char *buf_pos = buf;
-	for ( i = 0 ; i < NR_CPUS; i++) {
-		shift = sprintf(buf_pos,"%d,",two_phase_freq_array[i]);
-		buf_pos += shift;
-	}
+	shift = sprintf(buf_pos,"%d,",two_phase_freq);
+	buf_pos += shift;
 	*(buf_pos-1) = '\0';
 	return strlen(buf);
 }
@@ -961,16 +956,7 @@ static ssize_t store_two_phase_freq(struct kobject *a, struct attribute *b,
 const char *buf, size_t count)
 {
 	int ret = 0;
-	if (NR_CPUS == 1)
-		ret = sscanf(buf,"%u",&two_phase_freq_array[0]);
-	else if (NR_CPUS == 2)
-		ret = sscanf(buf,"%u,%u",&two_phase_freq_array[0],
-		&two_phase_freq_array[1]);
-	else if (NR_CPUS == 4)
-		ret = sscanf(buf, "%u,%u,%u,%u", &two_phase_freq_array[0],
-	&two_phase_freq_array[1],
-	&two_phase_freq_array[2],
-	&two_phase_freq_array[3]);
+		ret = sscanf(buf,"%u",&two_phase_freq);
 	if (ret < NR_CPUS)
 		return -EINVAL;
 	return count;
