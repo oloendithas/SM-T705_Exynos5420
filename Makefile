@@ -193,7 +193,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= arm
-CROSS_COMPILE	?= /media/arthur/extvol/android/arm-linux-gnueabi-linaro_4.8.4-2014.08/bin/arm-eabi-
+CROSS_COMPILE	?= /media/arthur/extvol/android/arm-cortex-linux-gnueabi-linaro_4.9.3-2015.01/bin/arm-cortex-linux-gnueabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -347,18 +347,17 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-LDFLAGS = -O3 --as-needed --sort-common -S --enable-new-dtags --hash-style=gnu -znow
+LDFLAGS = -Ofast --as-needed --sort-common -S --enable-new-dtags --hash-style=gnu -znow
 CFLAGS_MODULE   = $(CFLAGS_KERNEL)
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  = $(LDFLAGS) --strip-debug
-CFLAGS_KERNEL	= -marm -munaligned-access -mfpu=neon-vfpv4 -ffast-math \
+CFLAGS_KERNEL	= -Ofast -DNDEBUG -marm -mfpu=neon-vfpv4 -march=armv7-a -munaligned-access \
 					-ftree-vectorize -mvectorize-with-neon-quad \
 					-floop-interchange -ftree-loop-distribution -floop-strip-mine -floop-block -fgraphite-identity \
-					-ftree-loop-im -ftree-loop-ivcanon -fivopts -funroll-loops -funswitch-loops -frerun-cse-after-loop \
-					-fweb -fsched-spec-load -fforce-addr -fsingle-precision-constant \
-					-fsection-anchors -frename-registers \
+					-ftree-loop-linear -ftree-loop-im -ftree-loop-ivcanon -fivopts -funswitch-loops -funroll-loops \
+					-fsched-spec-load -fforce-addr -fsingle-precision-constant -fsection-anchors \
 					-fmodulo-sched -fmodulo-sched-allow-regmoves \
-					-fomit-frame-pointer -fno-inline-functions
+					-fomit-frame-pointer -fno-strict-aliasing -fno-common 
 AFLAGS_KERNEL	=
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
@@ -372,14 +371,11 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -DNDEBUG -Wall -Werror -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing -fno-common \
-		   -Werror-implicit-function-declaration \
-		   -Wno-format-security -Wno-unused \
-                   -Wno-uninitialized \
-		   -fno-delete-null-pointer-checks
-		   -mfpu=-neon-vfpv4 -march=armv7-a -funswitch-loops -mfloat-abi=softfp \
-                   -funsafe-math-optimizations -funroll-loops -mvectorize-with-neon-quad \
+KBUILD_CFLAGS   := -Wall -Werror -Wundef -Wstrict-prototypes -Wno-trigraphs \
+				   -Werror-implicit-function-declaration \
+				   -Wno-format-security -Wno-unused -Wno-uninitialized \
+				   -fno-delete-null-pointer-checks \
+				   -mfloat-abi=softfp \
 				   $(CFLAGS_KERNEL)
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=

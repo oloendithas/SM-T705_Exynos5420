@@ -270,7 +270,7 @@ static int mali_dvfs_update_asv(int cmd)
 	if (cmd == ASV_CMD_DISABLE) {
 		for (i = 0; i < MALI_DVFS_STEP; i++) {
 #ifdef CONFIG_SUPPORT_WQXGA
-			mali_dvfs_infotbl[i].voltage = mali_dvfs_vol_default[i+1];
+			mali_dvfs_infotbl[i].voltage = mali_dvfs_vol_default[i+1 < MALI_DVFS_STEP ? i+1 : i];
 #else
 			mali_dvfs_infotbl[i].voltage = mali_dvfs_vol_default[i];
 #endif  /* CONFIG_SUPPORT_WQXGA */
