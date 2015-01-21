@@ -8,6 +8,7 @@
 # This file has been put into the public domain.
 # You can do whatever you want with this file.
 #
+# lc=2(3)4  dict=16MiB  lb=0-4 pb=0(2)4  mf=hc3-4/bt2-4   nice=2-273   
 
 BCJ=
 LZMA2OPTS=
@@ -20,4 +21,4 @@ case $SRCARCH in
 	sparc)          BCJ=--sparc ;;
 esac
 
-exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=8MiB
+exec xz --check=crc32 $BCJ --lzma2=$LZMA2OPTS,dict=16MiB
