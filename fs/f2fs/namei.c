@@ -41,32 +41,20 @@ static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
 	}
 	f2fs_unlock_op(sbi);
 
-#ifdef CONFIG_F2FS_ANDROID_EMULATION_SUPPORT
 	if (IS_ANDROID_EMU(sbi, F2FS_I(dir), F2FS_I(dir)))
 		f2fs_android_emu(sbi, inode, &inode->i_uid,
 				 &inode->i_gid, &mode);
 	else {
 		inode->i_uid = current_fsuid();
 
-		if (dir->i_mode & S_ISGID) {
-			inode->i_gid = dir->i_gid;
-			if (S_ISDIR(mode))
-				mode |= S_ISGID;
-		} else {
-			inode->i_gid = current_fsgid();
+	if (dir->i_mode & S_ISGID) {
+		inode->i_gid = dir->i_gid;
+		if (S_ISDIR(mode))
+			mode |= S_ISGID;
+	} else {
+		inode->i_gid = current_fsgid();
 		}
 	}
-#else
-                inode->i_uid = current_fsuid();
-
-                if (dir->i_mode & S_ISGID) {
-                        inode->i_gid = dir->i_gid;
-                        if (S_ISDIR(mode))
-                                mode |= S_ISGID;
-                } else {
-                        inode->i_gid = current_fsgid();
-                }
-#endif
 
 	inode->i_ino = ino;
 	inode->i_mode = mode;
@@ -126,7 +114,7 @@ static inline void set_cold_files(struct f2fs_sb_info *sbi, struct inode *inode,
 }
 
 static int f2fs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
-						struct nameidata *nd)
+		       struct nameidata *nd)
 {
 	struct super_block *sb = dir->i_sb;
 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
@@ -198,7 +186,7 @@ out:
 
 struct dentry *f2fs_get_parent(struct dentry *child)
 {
-	struct qstr dotdot = {.name = "..", .len = 2};
+	struct qstr dotdot = {.len = 2, .name = ".."};
 	unsigned long ino = f2fs_inode_by_name(child->d_inode, &dotdot);
 	if (!ino)
 		return ERR_PTR(-ENOENT);
@@ -206,7 +194,7 @@ struct dentry *f2fs_get_parent(struct dentry *child)
 }
 
 static struct dentry *f2fs_lookup(struct inode *dir, struct dentry *dentry,
-		struct nameidata *nd)
+					struct nameidata *nd)
 {
 	struct inode *inode = NULL;
 	struct f2fs_dir_entry *de;
@@ -224,8 +212,6 @@ static struct dentry *f2fs_lookup(struct inode *dir, struct dentry *dentry,
 		inode = f2fs_iget(dir->i_sb, ino);
 		if (IS_ERR(inode))
 			return ERR_CAST(inode);
-
-		stat_inc_inline_inode(inode);
 	}
 
 	return d_splice_alias(inode, dentry);
@@ -443,12 +429,17 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		}
 
 		f2fs_set_link(new_dir, new_entry, new_page, old_inode);
+		down_write(&F2FS_I(old_inode)->i_sem);
 		F2FS_I(old_inode)->i_pino = new_dir->i_ino;
+		up_write(&F2FS_I(old_inode)->i_sem);
 
 		new_inode->i_ctime = CURRENT_TIME;
+		down_write(&F2FS_I(new_inode)->i_sem);
 		if (old_dir_entry)
 			drop_nlink(new_inode);
 		drop_nlink(new_inode);
+		up_write(&F2FS_I(new_inode)->i_sem);
+
 		mark_inode_dirty(new_inode);
 
 		if (!new_inode->i_nlink)
@@ -478,7 +469,9 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		if (old_dir != new_dir) {
 			f2fs_set_link(old_inode, old_dir_entry,
 						old_dir_page, new_dir);
+			down_write(&F2FS_I(old_inode)->i_sem);
 			F2FS_I(old_inode)->i_pino = new_dir->i_ino;
+			up_write(&F2FS_I(old_inode)->i_sem);
 			update_inode_page(old_inode);
 		} else {
 			kunmap(old_dir_page);
@@ -493,10 +486,7 @@ static int f2fs_rename(struct inode *old_dir, struct dentry *old_dentry,
 	return 0;
 
 put_out_dir:
-	if (PageLocked(new_page))
-		f2fs_put_page(new_page, 1);
-	else
-		f2fs_put_page(new_page, 0);
+	f2fs_put_page(new_page, 1);
 out_dir:
 	if (old_dir_entry) {
 		kunmap(old_dir_page);

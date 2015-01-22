@@ -169,7 +169,7 @@ struct posix_acl *f2fs_get_acl(struct inode *inode, int type)
 
 	retval = f2fs_getxattr(inode, name_index, "", NULL, 0);
 	if (retval > 0) {
-		value = kmalloc(retval, GFP_KERNEL);
+		value = kmalloc(retval, GFP_F2FS_ZERO);
 		if (!value)
 			return ERR_PTR(-ENOMEM);
 		retval = f2fs_getxattr(inode, name_index, "", value, retval);
@@ -257,12 +257,8 @@ int f2fs_init_acl(struct inode *inode, struct inode *dir, struct page *ipage)
 			if (IS_ERR(acl))
 				return PTR_ERR(acl);
 		}
-#ifdef CONFIG_F2FS_ANDROID_EMULATION_SUPPORT
 		if (!acl && !(test_opt(sbi, ANDROID_EMU) &&
 				F2FS_I(inode)->i_advise & FADVISE_ANDROID_EMU))
-#else
-		if (!acl)
-#endif
 			inode->i_mode &= ~current_umask();
 	}
 
@@ -289,7 +285,7 @@ int f2fs_acl_chmod(struct inode *inode)
 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
 	struct posix_acl *acl;
 	int error;
-	mode_t mode = get_inode_mode(inode);
+	umode_t mode = get_inode_mode(inode);
 
 	if (!test_opt(sbi, POSIX_ACL))
 		return 0;
@@ -308,7 +304,7 @@ int f2fs_acl_chmod(struct inode *inode)
 	posix_acl_release(acl);
 	return error;
 }
-#ifdef CONFIG_F2FS_ANDROID_EMULATION_SUPPORT
+
 int f2fs_android_emu(struct f2fs_sb_info *sbi, struct inode *inode,
 		u32 *uid, u32 *gid, umode_t *mode)
 {
@@ -334,7 +330,7 @@ int f2fs_android_emu(struct f2fs_sb_info *sbi, struct inode *inode,
 
 	return 0;
 }
-#endif
+
 static size_t f2fs_xattr_list_acl(struct dentry *dentry, char *list,
 		size_t list_size, const char *name, size_t name_len, int type)
 {
