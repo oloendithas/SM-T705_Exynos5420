@@ -180,8 +180,7 @@ static int is_cpufreq_valid(int cpu)
  * @cooling_state: value of the cooling state.
  */
  
-s64 state_up_delay_ms = 5000000000;
-s64 last_state_up_timestamp;
+static s64 last_state_up_timestamp = 0;
 
 static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 				unsigned long cooling_state)
@@ -209,13 +208,11 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 //			pr_info("cpufreq_apply_cooling: last_state_up_timestamp=%lli\n", last_state_up_timestamp);
 			return 0;
 		} else {
-			s64 elapsed;
-			s64 curr_time = ktime_get_boottime().tv64;
-			elapsed = curr_time - last_state_up_timestamp;
+			s64 elapsed = ktime_get_boottime().tv64 - last_state_up_timestamp;
 			
-//			pr_info("cpufreq_apply_cooling: last_state_up_timestamp=%lli, curr_time=%lli, elapsed=%lli\n", 
-//					last_state_up_timestamp, curr_time, elapsed);
-			if (elapsed < state_up_delay_ms) {
+//			pr_info("cpufreq_apply_cooling: last_state_up_timestamp=%lli, elapsed=%lli\n", 
+//					last_state_up_timestamp, elapsed);
+			if (elapsed < 5000000000) {
 //				pr_info("cpufreq_apply_cooling: skip run\n");
 				return 0;
 			}
@@ -257,11 +254,11 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 	if (notify_table != NOTIFY_INVALID) {
 		event = CPUFREQ_COOLING_START;
 		maskPtr = notify_table->mask_val;
-		pr_info("[TMU] COOLING START: temp_level=%d, clip_max=%d\n",
+		pr_debug("[TMU] COOLING START: temp_level=%d, clip_max=%d\n",
 				notify_table->temp_level, notify_table->freq_clip_max);
 	} else {
 		event = CPUFREQ_COOLING_STOP;
-		pr_info("[TMU] COOLING STOP\n");
+		pr_debug("[TMU] COOLING STOP\n");
 	}
 
 	blocking_notifier_call_chain(&cputherm_state_notifier_list,

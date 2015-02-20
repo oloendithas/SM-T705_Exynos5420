@@ -657,7 +657,7 @@ int mali_dvfs_freq_max_lock(int level, gpu_lock_type user_lock)
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
-	printk("[G3D] Lock max clk: %d\n", mali_dvfs_infotbl[level].clock);
+	pr_debug("[G3D] Lock max clk: %d\n", mali_dvfs_infotbl[level].clock);
 #endif
 	return 0;
 }
@@ -691,7 +691,7 @@ void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock)
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 #endif
 
-	printk("[G3D] Unlock max clk\n");
+	pr_debug("[G3D] Unlock max clk\n");
 }
 
 int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock)
@@ -726,7 +726,7 @@ int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock)
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
-	printk("[G3D] Lock min clk: %d\n", mali_dvfs_infotbl[level].clock);
+	pr_debug("[G3D] Lock min clk: %d\n", mali_dvfs_infotbl[level].clock);
 #endif
 	return 0;
 }
@@ -759,7 +759,7 @@ void mali_dvfs_freq_min_unlock(gpu_lock_type user_lock)
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 #endif
-	printk("[G3D] Unlock min clk\n");
+	pr_debug("[G3D] Unlock min clk\n");
 }
 
 int kbase_platform_regulator_init(void)
@@ -914,23 +914,23 @@ int kbase_tmu_hot_check_and_work(unsigned long event)
 	switch(event) {
 		case GPU_THROTTLING1:
 			lock_level = GPU_THROTTLING_90_95;
-			printk("[G3D] GPU_THROTTLING_90_95\n");
+			pr_debug("[G3D] GPU_THROTTLING_90_95\n");
 			break;
 		case GPU_THROTTLING2:
 			lock_level = GPU_THROTTLING_95_100;
-			printk("[G3D] GPU_THROTTLING_95_100\n");
+			pr_debug("[G3D] GPU_THROTTLING_95_100\n");
 			break;
 		case GPU_THROTTLING3:
 			lock_level = GPU_THROTTLING_100_105;
-			printk("[G3D] GPU_THROTTLING_100_105\n");
+			pr_debug("[G3D] GPU_THROTTLING_100_105\n");
 			break;
 		case GPU_THROTTLING4:
 			lock_level = GPU_THROTTLING_105_110;
-			printk("[G3D] GPU_THROTTLING_105_110\n");
+			pr_debug("[G3D] GPU_THROTTLING_105_110\n");
 			break;
 		case GPU_TRIPPING:
 			lock_level = GPU_TRIPPING_110;
-			printk("[G3D] GPU_THROTTLING_110\n");
+			pr_debug("[G3D] GPU_THROTTLING_110\n");
 		default:
 			return 0;
 	}

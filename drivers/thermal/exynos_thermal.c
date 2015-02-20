@@ -127,11 +127,11 @@
 
 #define HOT_NORMAL_TEMP 70
 #define HOT_CRITICAL_TEMP 90
-#define HOT_95 95
-#define HOT_109 104
-#define HOT_110 105
-#define MEM_TH_TEMP1 65
-#define MEM_TH_TEMP2 75
+#define HOT_95 75
+#define HOT_109 85
+#define HOT_110 90
+#define MEM_TH_TEMP1 60
+#define MEM_TH_TEMP2 70
 #define GPU_TH_TEMP1 40
 #define GPU_TH_TEMP2 50
 #define GPU_TH_TEMP3 60
