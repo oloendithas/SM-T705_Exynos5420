@@ -83,10 +83,14 @@
  *   dentry1->d_lock
  *     dentry2->d_lock
  */
+#ifdef CONFIG_ADAPTIVE_VFS_CACHE_PRESSURE
 #define DEFAULT_VFS_CACHE_PRESSURE 100
-#define DEFAULT_VFS_SUSPEND_CACHE_PRESSURE 20
 int sysctl_vfs_cache_pressure __read_mostly, resume_cache_pressure;
+#define DEFAULT_VFS_SUSPEND_CACHE_PRESSURE 20
 int sysctl_vfs_suspend_cache_pressure __read_mostly, suspend_cache_pressure;
+#else
+int sysctl_vfs_cache_pressure __read_mostly = 100;
+#endif
 
 EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
 
@@ -3045,6 +3049,7 @@ ino_t find_inode_number(struct dentry *dir, struct qstr *name)
 }
 EXPORT_SYMBOL(find_inode_number);
 
+#ifdef CONFIG_ADAPTIVE_VFS_CACHE_PRESSURE
 #ifdef CONFIG_POWERSUSPEND
 static void cpressure_power_suspend(struct power_suspend *handler)
 {
@@ -3066,6 +3071,7 @@ static struct power_suspend cpressure_suspend = {
  .suspend = cpressure_power_suspend,
  .resume = cpressure_power_resume,
 };
+#endif
 #endif
 
 static __initdata unsigned long dhash_entries;
@@ -3140,10 +3146,12 @@ EXPORT_SYMBOL(d_genocide);
 
 void __init vfs_caches_init_early(void)
 {
+#ifdef CONFIG_ADAPTIVE_VFS_CACHE_PRESSURE
 	sysctl_vfs_cache_pressure = resume_cache_pressure =
 	DEFAULT_VFS_CACHE_PRESSURE;
 	sysctl_vfs_suspend_cache_pressure = suspend_cache_pressure =
 	DEFAULT_VFS_SUSPEND_CACHE_PRESSURE;
+#endif
 	
 	dcache_init_early();
 	inode_init_early();
