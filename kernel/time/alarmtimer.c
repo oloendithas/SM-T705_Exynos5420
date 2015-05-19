@@ -316,6 +316,8 @@ static int alarmtimer_suspend(struct device *dev)
 
 	if (ktime_to_ns(min) < 2 * NSEC_PER_SEC) {
 		__pm_wakeup_event(ws, 2 * MSEC_PER_SEC);
+		dev_err(dev,
+			"Nearest alarm wakeup time < 2sec, avoiding suspend\n");
 		return -EBUSY;
 	}
 
