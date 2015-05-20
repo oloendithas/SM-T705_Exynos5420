@@ -2935,15 +2935,15 @@ static int sec_bat_get_property(struct power_supply *psy,
 		val->intval = battery->charging_mode;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
+//#if defined(CONFIG_V1A) || defined(CONFIG_V2A)
 		val->intval = battery->capacity;
-#else
+//#else
 		/* In full-charged status, SOC is always 100% */
-		if (battery->status == POWER_SUPPLY_STATUS_FULL)
-			val->intval = 100;
-		else
-			val->intval = battery->capacity;
-#endif
+//		if (battery->status == POWER_SUPPLY_STATUS_FULL)
+//			val->intval = 100;
+//		else
+//			val->intval = battery->capacity;
+//#endif
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = battery->temperature;
