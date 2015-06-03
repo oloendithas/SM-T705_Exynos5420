@@ -2565,16 +2565,16 @@ ssize_t sec_hal_fg_store_attrs(struct device *dev,
 }
 #endif
 
-static unsigned int voltage_curve[] = { 3400,3428,3452,3474,3492,3509,3523,3536,3548,3559,3569,3578,3587,3595,3603,3610,3617,3624,3631,3637,3644,3650,3656,3662,3668,3674,3680,3686,3692,3698,3704,3710,3716,3722,3729,3735,3741,3747,3753,3760,3766,3772,3779,3785,3792,3798,3805,3811,3818,3825,3831,3838,3845,3852,3859,3866,3872,3879,3887,3894,3901,3908,3915,3923,3930,3938,3945,3953,3960,3968,3976,3984,3992,4000,4008,4016,4024,4032,4041,4049,4058,4066,4075,4084,4092,4101,4111,4120,4129,4138,4148,4157,4167,4177,4187,4197,4207,4217,4228,4238 };
+static unsigned int voltage_curve[] = { 3400,3428,3453,3474,3493,3509,3524,3537,3548,3559,3569,3578,3587,3595,3603,3610,3618,3624,3631,3638,3644,3650,3657,3663,3669,3675,3681,3687,3693,3699,3705,3711,3717,3723,3729,3735,3741,3748,3754,3760,3766,3773,3779,3786,3792,3798,3805,3812,3818,3825,3831,3838,3845,3852,3858,3865,3872,3879,3886,3893,3900,3907,3915,3922,3929,3937,3944,3951,3959,3966,3974,3982,3990,3997,4005,4013,4021,4029,4037,4046,4054,4062,4071,4079,4088,4097,4105,4114,4123,4132,4141,4151,4160,4169,4179,4189,4198,4208,4218,4228 };
 
-static unsigned int charging_correction_V = 106;
+static unsigned int charging_correction_V = 100;
 static unsigned int alt_soc_avg_interval = 600;
 static unsigned int last_alt_soc_request_timestamp;
 static unsigned int last_alt_soc_avg_timestamp;
 static unsigned int last_charging_state;
-static unsigned int warmup_time = 10;
-static int last_voltage_avg_value1 = 4238;
-static int last_voltage_avg_value2 = 4238;
+static unsigned int warmup_time = 30;
+static int last_voltage_avg_value1 = 4228;
+static int last_voltage_avg_value2 = 4228;
 static int last_alt_soc_value = 1000;
 
 int sec_fg_get_alt_soc(void)
@@ -2589,7 +2589,7 @@ int sec_fg_get_alt_soc(void)
 	new_voltage = voltage_avg.intval;
 	charging = charge_now.intval;
 	
-	if (!charging && last_charging_state)
+	if (curr_time > warmup_time && !charging && last_charging_state)
 		last_voltage_avg_value1 = last_voltage_avg_value1 - charging_correction_V;
 	
 	if (charging) {
@@ -2599,7 +2599,7 @@ int sec_fg_get_alt_soc(void)
 			new_voltage = voltage_curve[0];
 	}
 	
-	if (last_alt_soc_request_timestamp > warmup_time 
+	if (curr_time > warmup_time 
 		&& curr_time - last_alt_soc_request_timestamp < alt_soc_avg_interval)
 		new_voltage = (new_voltage + last_voltage_avg_value1 + last_voltage_avg_value2) / 3;
 	
@@ -2616,7 +2616,7 @@ int sec_fg_get_alt_soc(void)
 			}
 	}
 	
-	if (last_alt_soc_request_timestamp > warmup_time && new_alt_soc != last_alt_soc_value)
+	if (curr_time > warmup_time && new_alt_soc != last_alt_soc_value)
 	{
 		if (new_alt_soc < last_alt_soc_value)
 			new_alt_soc = last_alt_soc_value - 10;
