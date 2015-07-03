@@ -126,17 +126,17 @@
 #define EXYNOS_GPU_NUMBER	4
 
 #define HOT_NORMAL_TEMP 70
-#define HOT_CRITICAL_TEMP 90
+#define HOT_CRITICAL_TEMP 115
 #define HOT_95 75
 #define HOT_109 85
-#define HOT_110 90
+#define HOT_110 100
 #define MEM_TH_TEMP1 60
-#define MEM_TH_TEMP2 70
+#define MEM_TH_TEMP2 80
 #define GPU_TH_TEMP1 40
 #define GPU_TH_TEMP2 50
 #define GPU_TH_TEMP3 60
 #define GPU_TH_TEMP4 70
-#define GPU_TH_TEMP5 75
+#define GPU_TH_TEMP5 110
 
 #define TYPE_CPU		1
 #define TYPE_GPU		2
@@ -152,7 +152,7 @@
 #define THRESH_LEVE3_SHIFT	24
 
 #define GAP_WITH_RISE		2
-#define MAX_FREQ		2300
+#define MAX_FREQ		1900
 #define MIN_FREQ		400
 
 #ifdef CONFIG_THERMAL_DEBUG
@@ -1427,7 +1427,11 @@ exynos_thermal_curr_temp(struct device *dev,
 	len += sprintf(&buf[len], "%ld,", temp[0]);
 	len += sprintf(&buf[len], "%ld,", temp[3]);
 	len += sprintf(&buf[len], "%ld,", temp[2]);
-	len += sprintf(&buf[len], "%ld\n", temp[1]);
+	if (EXYNOS_TMU_COUNT > 4) {
+		len += sprintf(&buf[len], "%ld,", temp[1]);
+		len += sprintf(&buf[len], "%ld\n", temp[4]);
+	} else
+		len += sprintf(&buf[len], "%ld\n", temp[1]);
 
 	return len;
 }
