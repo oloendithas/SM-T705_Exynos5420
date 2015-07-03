@@ -36,7 +36,11 @@
 #include <linux/bit_spinlock.h>
 #include <linux/rculist_bl.h>
 #include <linux/prefetch.h>
+
+#ifdef CONFIG_POWERSUSPEND
 #include <linux/powersuspend.h>
+#endif
+
 #include <linux/ratelimit.h>
 #include "internal.h"
 #include "mount.h"
@@ -3008,6 +3012,7 @@ ino_t find_inode_number(struct dentry *dir, struct qstr *name)
 }
 EXPORT_SYMBOL(find_inode_number);
 
+#ifdef CONFIG_POWERSUSPEND
 static void cpressure_power_suspend(struct power_suspend *handler)
 {
  if (sysctl_vfs_cache_pressure != resume_cache_pressure)
@@ -3028,6 +3033,7 @@ static struct power_suspend cpressure_suspend = {
  .suspend = cpressure_power_suspend,
  .resume = cpressure_power_resume,
 };
+#endif
 
 static __initdata unsigned long dhash_entries;
 static int __init set_dhash_entries(char *str)
@@ -3130,5 +3136,7 @@ void __init vfs_caches_init(unsigned long mempages)
 	bdev_cache_init();
 	chrdev_init();
 	
+#ifdef CONFIG_POWERSUSPEND
 	register_power_suspend(&cpressure_suspend);
+#endif
 }

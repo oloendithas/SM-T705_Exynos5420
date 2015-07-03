@@ -35,7 +35,10 @@
 #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
 #include <linux/pagevec.h>
 #include <trace/events/writeback.h>
+
+#ifdef CONFIG_POWERSUSPEND
 #include <linux/powersuspend.h>
+#endif
 
 /*
  * Sleep at most 200ms at a time in balance_dirty_pages().
@@ -1693,6 +1696,7 @@ static struct notifier_block __cpuinitdata ratelimit_nb = {
 	.next		= NULL,
 };
 
+#ifdef CONFIG_POWERSUSPEND
 #ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
 /*
  * Sets the dirty page writebacks interval for suspended system
@@ -1741,6 +1745,7 @@ static struct power_suspend dirty_suspend = {
 	.suspend = dirty_power_suspend,
 	.resume = dirty_power_resume,
 };
+#endif
 
 /*
  * Called early on to tune the page writeback dirty limits.
@@ -1769,11 +1774,15 @@ void __init page_writeback_init(void)
 	sleep_dirty_expire_interval = suspend_dirty_expire_interval =
 		DEFAULT_SUSPEND_DIRTY_EXPIRE_INTERVAL;
 
+#ifdef CONFIG_POWERSUSPEND
 	register_power_suspend(&dirty_suspend);
-
+#endif
+	
 #ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
+#ifdef CONFIG_POWERSUSPEND
 	/* Register the dirty page writeback management during suspend/resume */
 	register_power_suspend(&dirty_writeback_suspend);
+#endif
 #endif
 
 	writeback_set_ratelimit();
