@@ -298,7 +298,7 @@ static struct regulator_init_data s2m_buck1_data = {
 static struct regulator_init_data s2m_buck2_data = {
 	.constraints = {
 		.name = "vdd_arm range",
-		.min_uV = 600000,
+		.min_uV = 800000,
 		.max_uV = 1500000,
 		.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE |
 				REGULATOR_CHANGE_STATUS,
