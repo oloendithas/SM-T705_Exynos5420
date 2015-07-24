@@ -32,7 +32,7 @@
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
 
-#undef CONFIG_MODE_AUTO_CHANGE
+#define CONFIG_MODE_AUTO_CHANGE
 
 static int active_count;
 
@@ -680,7 +680,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 		pcpu->floor_validate_time = now;
 	}
 
-	if (pcpu->target_freq == new_freq) {
+	if (pcpu->target_freq == new_freq &&
+			pcpu->target_freq <= pcpu->policy->cur) {
 		goto rearm_if_notmax;
 	}
 
@@ -1495,7 +1496,8 @@ static ssize_t show_cpu_util(
 			ret += sprintf(buf + ret, "OFF ");
 	}
 
-	ret += sprintf(buf + --ret, "\n");
+	ret += sprintf(buf + ret - 1, "\n");
+	ret--;
 	return ret;
 }
 
