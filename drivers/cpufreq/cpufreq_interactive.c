@@ -441,7 +441,7 @@ static u64 update_load(int cpu)
 }
 
 #ifdef CONFIG_MODE_AUTO_CHANGE
-static unsigned int check_mode(int cpu, unsigned int cur_mode, u64 now)
+static unsigned int check_mode(unsigned int cur_mode, u64 now)
 {
 	int i;
 	unsigned int ret=cur_mode, total_load=0, max_single_load=0;
@@ -591,7 +591,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 	if (enforced_mode)
 		new_mode = enforced_mode;
 	else
-		new_mode = check_mode(data, mode, now);
+		new_mode = check_mode(mode, now);
 	if (new_mode != mode) {
 		mode = new_mode;
 		if (new_mode & MULTI_MODE || new_mode & SINGLE_MODE)
@@ -810,33 +810,20 @@ static int cpufreq_interactive_speedchange_task(void *data)
 		cpumask_clear(&speedchange_cpumask);
 		spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
 
-		for_each_cpu(cpu, &tmp_mask) {
-			unsigned int j;
-			unsigned int max_freq = 0;
-
-			pcpu = &per_cpu(cpuinfo, cpu);
-			if (!down_read_trylock(&pcpu->enable_sem))
-				continue;
-			if (!pcpu->governor_enabled) {
-				up_read(&pcpu->enable_sem);
-				continue;
-			}
-
-			for_each_cpu(j, pcpu->policy->cpus) {
-				struct cpufreq_interactive_cpuinfo *pjcpu =
-					&per_cpu(cpuinfo, j);
-
-				if (pjcpu->target_freq > max_freq)
-					max_freq = pjcpu->target_freq;
-			}
-
-			if (max_freq != pcpu->policy->cur)
-				__cpufreq_driver_target(pcpu->policy,
-							max_freq,
-							CPUFREQ_RELATION_H);
-
+		pcpu = &per_cpu(cpuinfo, cpu);
+		if (!down_read_trylock(&pcpu->enable_sem))
+			continue;
+		if (!pcpu->governor_enabled) {
 			up_read(&pcpu->enable_sem);
+			continue;
 		}
+
+		if (pcpu->target_freq != pcpu->policy->cur)
+			__cpufreq_driver_target(pcpu->policy,
+						pcpu->target_freq,
+						CPUFREQ_RELATION_H);
+
+		up_read(&pcpu->enable_sem);
 	}
 
 	return 0;
@@ -851,25 +838,23 @@ static void cpufreq_interactive_boost(void)
 
 	spin_lock_irqsave(&speedchange_cpumask_lock, flags);
 
-	for_each_online_cpu(i) {
-		pcpu = &per_cpu(cpuinfo, i);
+	pcpu = &per_cpu(cpuinfo, i);
 
-		if (pcpu->target_freq < hispeed_freq) {
-			pcpu->target_freq = hispeed_freq;
-			cpumask_set_cpu(i, &speedchange_cpumask);
-			pcpu->hispeed_validate_time =
-				ktime_to_us(ktime_get());
-			anyboost = 1;
-		}
-
-		/*
-		 * Set floor freq and (re)start timer for when last
-		 * validated.
-		 */
-
-		pcpu->floor_freq = hispeed_freq;
-		pcpu->floor_validate_time = ktime_to_us(ktime_get());
+	if (pcpu->target_freq < hispeed_freq) {
+		pcpu->target_freq = hispeed_freq;
+		cpumask_set_cpu(i, &speedchange_cpumask);
+		pcpu->hispeed_validate_time =
+			ktime_to_us(ktime_get());
+		anyboost = 1;
 	}
+
+	/*
+	 * Set floor freq and (re)start timer for when last
+	 * validated.
+	 */
+
+	pcpu->floor_freq = hispeed_freq;
+	pcpu->floor_validate_time = ktime_to_us(ktime_get());
 
 	spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
 

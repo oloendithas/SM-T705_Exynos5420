@@ -45,7 +45,7 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
 
 	/* reset policy at stock speeds */
 	policy->max = 1900000;
-	policy->min = 100000;
+	policy->min = 250000;
 	
 	if (policy->min == ~0)
 		return -EINVAL;
@@ -59,6 +59,8 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
 				   struct cpufreq_frequency_table *table)
 {
 	unsigned int next_larger = ~0, freq, i = 0;
+
+
 	bool found = false;
 
 	pr_debug("request for verification of policy (%u - %u kHz) for cpu %u\n",
@@ -69,10 +71,13 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
 
 	cpufreq_verify_within_cpu_limits(policy);
 
+
 	for (; freq = table[i].frequency, freq != CPUFREQ_TABLE_END; i++) {
+
 		if (freq == CPUFREQ_ENTRY_INVALID)
 			continue;
 		if ((freq >= policy->min) && (freq <= policy->max)) {
+
 			found = true;
 			break;
 		}
@@ -83,7 +88,9 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
 
 	if (!found) {
 		policy->max = next_larger;
+
 		cpufreq_verify_within_cpu_limits(policy);
+
 	}
 
 	pr_debug("verification lead to (%u - %u kHz) for cpu %u\n",
@@ -92,6 +99,7 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(cpufreq_frequency_table_verify);
+
 
 int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 				   struct cpufreq_frequency_table *table,
