@@ -1,7 +1,7 @@
 #
-# Makefile for the kernel mobicore drivers
+# Makefile for the kernel mobicore drivers for Exynos5420
 #
-GUD_ROOT_FOLDER := drivers/gud/
+GUD_ROOT_FOLDER := drivers/gud/gud-exynos5420
 # add our modules to kernel.
 obj-$(CONFIG_MOBICORE_API) += mcKernelApi.o
 obj-$(CONFIG_MOBICORE_DRIVER) += mcDrvModule.o

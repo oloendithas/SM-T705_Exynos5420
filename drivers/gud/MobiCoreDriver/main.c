@@ -112,12 +112,12 @@ static inline void free_continguous_pages(void *addr, unsigned int order)
 	int i;
 	struct page *page = virt_to_page(addr);
 	for (i = 0; i < (1<<order); i++) {
-		MCDRV_DBG_VERBOSE(mcd, "free page at 0x%p", page);
+		MCDRV_DBG_VERBOSE(mcd, "free page at 0x%p\n", page);
 		ClearPageReserved(page);
 		page++;
 	}
 
-	MCDRV_DBG_VERBOSE(mcd, "freeing addr:%p, order:%x", addr, order);
+	MCDRV_DBG_VERBOSE(mcd, "freeing addr:%p, order:%x\n", addr, order);
 	free_pages((unsigned long)addr, order);
 }
 
@@ -131,7 +131,7 @@ static int free_buffer(struct mc_buffer *buffer, bool unlock)
 		return -EINVAL;
 
 	MCDRV_DBG_VERBOSE(mcd,
-			  "handle=%u phys_addr=0x%p, virt_addr=0x%p len=%u",
+			  "handle=%u phys_addr=0x%p, virt_addr=0x%p len=%u\n",
 		  buffer->handle, buffer->phys, buffer->addr, buffer->len);
 
 	if (!atomic_dec_and_test(&buffer->usage)) {
@@ -186,7 +186,7 @@ bool mc_check_owner_fd(struct mc_instance *instance, int32_t fd)
 	struct task_struct *peer = NULL;
 	bool ret = false;
 
-	MCDRV_DBG(mcd, "Finding wsm for fd = %d", fd);
+	MCDRV_DBG(mcd, "Finding wsm for fd = %d\n", fd);
 	if (!instance)
 		return false;
 
@@ -197,7 +197,7 @@ bool mc_check_owner_fd(struct mc_instance *instance, int32_t fd)
 	s = __get_socket(fp);
 	if (s) {
 		peer = get_pid_task(s->sk_peer_pid, PIDTYPE_PID);
-		MCDRV_DBG(mcd, "Found pid for fd %d", peer->pid);
+		MCDRV_DBG(mcd, "Found pid for fd %d\n", peer->pid);
 	}
 	if (peer) {
 		task_lock(peer);
@@ -239,7 +239,7 @@ static uint32_t mc_find_cont_wsm(struct mc_instance *instance, uint32_t handle,
 		return -EFAULT;
 
 	if (WARN_ON(!is_daemon(instance))) {
-		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon");
+		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon\n");
 		return -EPERM;
 	}
 
@@ -310,8 +310,10 @@ found_buffer:
 		goto err;
 	}
 	mutex_unlock(&ctx.bufs_lock);
-	/* Only unmap if the request is comming from the user space and
-	 * it hasn't already been unmapped */
+	/*
+	 * Only unmap if the request is comming from the user space and
+	 * it hasn't already been unmapped
+	 */
 	if (unlock == false && uaddr != NULL) {
 #ifndef MC_VM_UNMAP
 		/* do_munmap must be done with mm->mmap_sem taken */
@@ -323,10 +325,12 @@ found_buffer:
 		ret = vm_munmap((long unsigned int)uaddr, len);
 #endif
 		if (ret < 0) {
-			/* Something is not right if we end up here, better not
+			/*
+			 * Something is not right if we end up here, better not
 			 * clean the buffer so we just leak memory instead of
-			 * creating security issues */
-			MCDRV_DBG_ERROR(mcd, "Memory can't be unmapped");
+			 * creating security issues
+			 */
+			MCDRV_DBG_ERROR(mcd, "Memory can't be unmapped\n");
 			return -EINVAL;
 		}
 	}
@@ -379,13 +383,13 @@ int mc_get_buffer(struct mc_instance *instance,
 		return -EFAULT;
 
 	if (len == 0) {
-		MCDRV_DBG_WARN(mcd, "cannot allocate size 0");
+		MCDRV_DBG_WARN(mcd, "cannot allocate size 0\n");
 		return -ENOMEM;
 	}
 
 	order = get_order(len);
 	if (order > MAX_ORDER) {
-		MCDRV_DBG_WARN(mcd, "Buffer size too large");
+		MCDRV_DBG_WARN(mcd, "Buffer size too large\n");
 		return -ENOMEM;
 	}
 	allocated_size = (1 << order) * PAGE_SIZE;
@@ -398,19 +402,19 @@ int mc_get_buffer(struct mc_instance *instance,
 
 	if (cbuffer == NULL) {
 		MCDRV_DBG_WARN(mcd,
-			       "MMAP_WSM request: could not allocate buffer");
+			       "MMAP_WSM request: could not allocate buffer\n");
 		ret = -ENOMEM;
 		goto unlock_instance;
 	}
 	mutex_lock(&ctx.bufs_lock);
 
-	MCDRV_DBG_VERBOSE(mcd, "size %ld -> order %d --> %ld (2^n pages)",
+	MCDRV_DBG_VERBOSE(mcd, "size %ld -> order %d --> %ld (2^n pages)\n",
 			  len, order, allocated_size);
 
 	addr = (void *)__get_free_pages(GFP_USER | __GFP_ZERO, order);
 
 	if (addr == NULL) {
-		MCDRV_DBG_WARN(mcd, "get_free_pages failed");
+		MCDRV_DBG_WARN(mcd, "get_free_pages failed\n");
 		ret = -ENOMEM;
 		goto err;
 	}
@@ -429,10 +433,9 @@ int mc_get_buffer(struct mc_instance *instance,
 	list_add(&cbuffer->list, &ctx.cont_bufs);
 
 	MCDRV_DBG_VERBOSE(mcd,
-			  "allocated phys=0x%p - 0x%p, size=%ld, kvirt=0x%p"
-			  ", h=%d",
-			  phys, (void *)((unsigned int)phys+allocated_size),
-			  allocated_size, addr, cbuffer->handle);
+			  "allocated phys=0x%p - 0x%p, size=%ld, kvirt=0x%p, h=%d\n",
+		  phys, (void *)((unsigned int)phys+allocated_size),
+		  allocated_size, addr, cbuffer->handle);
 	*buffer = cbuffer;
 	goto unlock;
 
@@ -458,7 +461,7 @@ static int __lock_buffer(struct mc_instance *instance, uint32_t handle)
 		return -EFAULT;
 
 	if (WARN_ON(!is_daemon(instance))) {
-		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon");
+		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon\n");
 		return -EPERM;
 	}
 
@@ -488,7 +491,7 @@ void *get_mci_base_phys(unsigned int len)
 		ctx.mci_base.addr =
 			(void *)__get_free_pages(GFP_USER | __GFP_ZERO, order);
 		if (ctx.mci_base.addr == NULL) {
-			MCDRV_DBG_WARN(mcd, "get_free_pages failed");
+			MCDRV_DBG_WARN(mcd, "get_free_pages failed\n");
 			memset(&ctx.mci_base, 0, sizeof(ctx.mci_base));
 			return NULL;
 		}
@@ -514,11 +517,11 @@ int mc_register_wsm_l2(struct mc_instance *instance,
 		return -EFAULT;
 
 	if (len == 0) {
-		MCDRV_DBG_ERROR(mcd, "len=0 is not supported!");
+		MCDRV_DBG_ERROR(mcd, "len=0 is not supported!\n");
 		return -EINVAL;
 	}
 
-	MCDRV_DBG_VERBOSE(mcd, "buffer: %p, len=%08x", (void *)buffer, len);
+	MCDRV_DBG_VERBOSE(mcd, "buffer: %p, len=%08x\n", (void *)buffer, len);
 
 	if (!mc_find_cont_wsm_addr(instance, (void *)buffer, &kbuff, len))
 		table = mc_alloc_l2_table(instance, NULL, (void *)kbuff, len);
@@ -526,7 +529,7 @@ int mc_register_wsm_l2(struct mc_instance *instance,
 		table = mc_alloc_l2_table(instance, task, (void *)buffer, len);
 
 	if (IS_ERR(table)) {
-		MCDRV_DBG_ERROR(mcd, "new_used_l2_table() failed");
+		MCDRV_DBG_ERROR(mcd, "new_used_l2_table() failed\n");
 		return -EINVAL;
 	}
 
@@ -538,10 +541,10 @@ int mc_register_wsm_l2(struct mc_instance *instance,
 	else
 		*phys = 0;
 
-	MCDRV_DBG_VERBOSE(mcd, "handle: %d, phys=%p",
+	MCDRV_DBG_VERBOSE(mcd, "handle: %d, phys=%p\n",
 			  *handle, (void *)*phys);
 
-	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X", ret, ret);
+	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X\n", ret, ret);
 
 	return ret;
 }
@@ -567,7 +570,7 @@ static int mc_lock_handle(struct mc_instance *instance, uint32_t handle)
 		return -EFAULT;
 
 	if (WARN_ON(!is_daemon(instance))) {
-		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon");
+		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon\n");
 		return -EPERM;
 	}
 
@@ -593,7 +596,7 @@ static int mc_unlock_handle(struct mc_instance *instance, uint32_t handle)
 		return -EFAULT;
 
 	if (WARN_ON(!is_daemon(instance))) {
-		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon");
+		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon\n");
 		return -EPERM;
 	}
 
@@ -619,7 +622,7 @@ static uint32_t mc_find_wsm_l2(struct mc_instance *instance,
 		return 0;
 
 	if (WARN_ON(!is_daemon(instance))) {
-		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon");
+		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon\n");
 		return 0;
 	}
 
@@ -634,7 +637,7 @@ static int mc_clean_wsm_l2(struct mc_instance *instance)
 		return -EFAULT;
 
 	if (WARN_ON(!is_daemon(instance))) {
-		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon");
+		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon\n");
 		return -EPERM;
 	}
 
@@ -652,14 +655,14 @@ static int mc_fd_mmap(struct file *file, struct vm_area_struct *vmarea)
 	struct mc_buffer *buffer = 0;
 	int ret = 0;
 
-	MCDRV_DBG_VERBOSE(mcd, "enter (vma start=0x%p, size=%ld, mci=%p)",
+	MCDRV_DBG_VERBOSE(mcd, "enter (vma start=0x%p, size=%ld, mci=%p)\n",
 			  (void *)vmarea->vm_start, len, ctx.mci_base.phys);
 
 	if (WARN(!instance, "No instance data available"))
 		return -EFAULT;
 
 	if (len == 0) {
-		MCDRV_DBG_ERROR(mcd, "cannot allocate size 0");
+		MCDRV_DBG_ERROR(mcd, "cannot allocate size 0\n");
 		return -ENOMEM;
 	}
 	if (paddr) {
@@ -667,7 +670,7 @@ static int mc_fd_mmap(struct file *file, struct vm_area_struct *vmarea)
 
 		/* search for the buffer list. */
 		list_for_each_entry(buffer, &ctx.cont_bufs, list) {
-			/* Only allow mapping if the client owns it!*/
+			/* Only allow mapping if the client owns it! */
 			if (buffer->phys == paddr &&
 			    buffer->instance == instance) {
 				/* We shouldn't do remap with larger size */
@@ -697,8 +700,10 @@ found:
 		pfn = (unsigned int)paddr >> PAGE_SHIFT;
 		ret = (int)remap_pfn_range(vmarea, vmarea->vm_start, pfn,
 			buffer->len, vmarea->vm_page_prot);
-		/* If the remap failed then don't mark this buffer as marked
-		 * since the unmaping will also fail */
+		/*
+		 * If the remap failed then don't mark this buffer as marked
+		 * since the unmaping will also fail
+		 */
 		if (ret)
 			buffer->uaddr = NULL;
 		mutex_unlock(&ctx.bufs_lock);
@@ -723,7 +728,7 @@ found:
 			vmarea->vm_page_prot);
 	}
 
-	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X", ret, ret);
+	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X\n", ret, ret);
 
 	return ret;
 }
@@ -813,7 +818,7 @@ static long mc_fd_user_ioctl(struct file *file, unsigned int cmd,
 		break;
 	}
 	default:
-		MCDRV_DBG_ERROR(mcd, "unsupported cmd=%d", cmd);
+		MCDRV_DBG_ERROR(mcd, "unsupported cmd=%d\n", cmd);
 		ret = -ENOIOCTLCMD;
 		break;
 
@@ -837,7 +842,7 @@ static long mc_fd_admin_ioctl(struct file *file, unsigned int cmd,
 		return -EFAULT;
 
 	if (WARN_ON(!is_daemon(instance))) {
-		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon");
+		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon\n");
 		return -EPERM;
 	}
 
@@ -986,27 +991,27 @@ static ssize_t mc_fd_read(struct file *file, char *buffer, size_t buffer_len,
 		return -EFAULT;
 
 	/* avoid debug output on non-error, because this is call quite often */
-	MCDRV_DBG_VERBOSE(mcd, "enter");
+	MCDRV_DBG_VERBOSE(mcd, "enter\n");
 
 	/* only the MobiCore Daemon is allowed to call this function */
 	if (WARN_ON(!is_daemon(instance))) {
-		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon");
+		MCDRV_DBG_ERROR(mcd, "caller not MobiCore Daemon\n");
 		return -EPERM;
 	}
 
 	if (buffer_len < sizeof(unsigned int)) {
-		MCDRV_DBG_ERROR(mcd, "invalid length");
+		MCDRV_DBG_ERROR(mcd, "invalid length\n");
 		return -EINVAL;
 	}
 
 	for (;;) {
 		if (wait_for_completion_interruptible(&ctx.isr_comp)) {
-			MCDRV_DBG_VERBOSE(mcd, "read interrupted");
+			MCDRV_DBG_VERBOSE(mcd, "read interrupted\n");
 			return -ERESTARTSYS;
 		}
 
 		ssiq_counter = atomic_read(&ctx.isr_counter);
-		MCDRV_DBG_VERBOSE(mcd, "ssiq_counter=%i, ctx.counter=%i",
+		MCDRV_DBG_VERBOSE(mcd, "ssiq_counter=%i, ctx.counter=%i\n",
 				  ssiq_counter, ctx.evt_counter);
 
 		if (ssiq_counter != ctx.evt_counter) {
@@ -1018,12 +1023,12 @@ static ssize_t mc_fd_read(struct file *file, char *buffer, size_t buffer_len,
 
 		/* end loop if non-blocking */
 		if (file->f_flags & O_NONBLOCK) {
-			MCDRV_DBG_ERROR(mcd, "non-blocking read");
+			MCDRV_DBG_ERROR(mcd, "non-blocking read\n");
 			return -EAGAIN;
 		}
 
 		if (signal_pending(current)) {
-			MCDRV_DBG_VERBOSE(mcd, "received signal.");
+			MCDRV_DBG_VERBOSE(mcd, "received signal.\n");
 			return -ERESTARTSYS;
 		}
 	}
@@ -1032,7 +1037,7 @@ static ssize_t mc_fd_read(struct file *file, char *buffer, size_t buffer_len,
 	ret = copy_to_user(buffer, &ctx.evt_counter, sizeof(unsigned int));
 
 	if (ret != 0) {
-		MCDRV_DBG_ERROR(mcd, "copy_to_user failed");
+		MCDRV_DBG_ERROR(mcd, "copy_to_user failed\n");
 		return -EFAULT;
 	}
 
@@ -1113,7 +1118,7 @@ static int mc_fd_user_open(struct inode *inode, struct file *file)
 {
 	struct mc_instance *instance;
 
-	MCDRV_DBG_VERBOSE(mcd, "enter");
+	MCDRV_DBG_VERBOSE(mcd, "enter\n");
 
 	instance = mc_alloc_instance();
 	if (instance == NULL)
@@ -1142,7 +1147,7 @@ static int mc_fd_admin_open(struct inode *inode, struct file *file)
 		return -ENOMEM;
 	instance = get_instance(file);
 
-	MCDRV_DBG(mcd, "accept this as MobiCore Daemon");
+	MCDRV_DBG(mcd, "accept this as MobiCore Daemon\n");
 
 	ctx.daemon_inst = instance;
 	ctx.daemon = current;
@@ -1173,7 +1178,7 @@ static int mc_fd_release(struct inode *inode, struct file *file)
 
 	/* check if daemon closes us. */
 	if (is_daemon(instance)) {
-		MCDRV_DBG_WARN(mcd, "MobiCore Daemon died");
+		MCDRV_DBG_WARN(mcd, "WARNING: MobiCore Daemon died\n");
 		ctx.daemon_inst = NULL;
 		ctx.daemon = NULL;
 	}
@@ -1184,7 +1189,7 @@ static int mc_fd_release(struct inode *inode, struct file *file)
 	 * ret is quite irrelevant here as most apps don't care about the
 	 * return value from close() and it's quite difficult to recover
 	 */
-	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X", ret, ret);
+	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X\n", ret, ret);
 
 	return (int)ret;
 }
@@ -1240,17 +1245,17 @@ static int create_devices(void)
 
 	ret = alloc_chrdev_region(&mc_dev_admin, 0, MC_DEV_MAX, "mobicore");
 	if (ret < 0) {
-		MCDRV_DBG_ERROR(mcd, "failed to allocate char dev region");
+		MCDRV_DBG_ERROR(mcd, "failed to allocate char dev region\n");
 		goto error;
 	}
 	mc_dev_user = MKDEV(MAJOR(mc_dev_admin), 1);
 
-	MCDRV_DBG_VERBOSE(mcd, "%s: dev %d", "mobicore", MAJOR(mc_dev_region));
+	MCDRV_DBG_VERBOSE(mcd, "%s: dev %d", "mobicore", MAJOR(mc_dev_admin));
 
 	/* First the ADMIN node */
 	ret = cdev_add(&mc_admin_cdev,  mc_dev_admin, 1);
 	if (ret != 0) {
-		MCDRV_DBG_ERROR(mcd, "admin device register failed");
+		MCDRV_DBG_ERROR(mcd, "admin device register failed\n");
 		goto error;
 	}
 	mc_admin_cdev.owner = THIS_MODULE;
@@ -1261,7 +1266,7 @@ static int create_devices(void)
 
 	ret = cdev_add(&mc_user_cdev, mc_dev_user, 1);
 	if (ret != 0) {
-		MCDRV_DBG_ERROR(mcd, "user device register failed");
+		MCDRV_DBG_ERROR(mcd, "user device register failed\n");
 		goto error_unregister;
 	}
 	mc_user_cdev.owner = THIS_MODULE;
@@ -1290,6 +1295,7 @@ out:
 static int __init mobicore_init(void)
 {
 	int ret = 0;
+
 	dev_set_name(mcd, "mcd");
 
 	dev_info(mcd, "MobiCore Driver, Build: " __TIMESTAMP__ "\n");
@@ -1302,13 +1308,13 @@ static int __init mobicore_init(void)
 	/* Hardware does not support ARM TrustZone -> Cannot continue! */
 	if (!has_security_extensions()) {
 		MCDRV_DBG_ERROR(mcd,
-				"Hardware doesn't support ARM TrustZone!");
+				"Hardware doesn't support ARM TrustZone!\n");
 		return -ENODEV;
 	}
 
 	/* Running in secure mode -> Cannot load the driver! */
 	if (is_secure_mode()) {
-		MCDRV_DBG_ERROR(mcd, "Running in secure MODE!");
+		MCDRV_DBG_ERROR(mcd, "Running in secure MODE!\n");
 		return -ENODEV;
 	}
 
@@ -1325,14 +1331,14 @@ static int __init mobicore_init(void)
 	ret = request_irq(MC_INTR_SSIQ, mc_ssiq_isr, IRQF_TRIGGER_RISING,
 			MC_ADMIN_DEVNODE, &ctx);
 	if (ret != 0) {
-		MCDRV_DBG_ERROR(mcd, "interrupt request failed");
+		MCDRV_DBG_ERROR(mcd, "interrupt request failed\n");
 		goto err_req_irq;
 	}
 
 #ifdef MC_PM_RUNTIME
 	ret = mc_pm_initialize(&ctx);
 	if (ret != 0) {
-		MCDRV_DBG_ERROR(mcd, "Power Management init failed!");
+		MCDRV_DBG_ERROR(mcd, "Power Management init failed!\n");
 		goto free_isr;
 	}
 #endif
@@ -1362,7 +1368,7 @@ static int __init mobicore_init(void)
 	mutex_init(&ctx.bufs_lock);
 
 	memset(&ctx.mci_base, 0, sizeof(ctx.mci_base));
-	MCDRV_DBG(mcd, "initialized");
+	MCDRV_DBG(mcd, "initialized\n");
 	return 0;
 
 free_pm:
@@ -1382,7 +1388,7 @@ error:
  */
 static void __exit mobicore_exit(void)
 {
-	MCDRV_DBG_VERBOSE(mcd, "enter");
+	MCDRV_DBG_VERBOSE(mcd, "enter\n");
 #ifdef MC_MEM_TRACES
 	mobicore_log_free();
 #endif

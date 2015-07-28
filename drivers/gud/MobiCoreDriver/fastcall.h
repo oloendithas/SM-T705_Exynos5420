@@ -124,8 +124,10 @@ static inline long _smc(void *data)
 
 		__asm__ volatile (
 #ifdef MC_ARCH_EXTENSION_SEC
-			/* This pseudo op is supported and required from
-			 * binutils 2.21 on */
+			/*
+			 * This pseudo op is supported and required from
+			 * binutils 2.21 on
+			 */
 			".arch_extension sec\n"
 #endif
 			"smc 0\n"

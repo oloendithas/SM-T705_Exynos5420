@@ -43,10 +43,6 @@
 
 #include "version.h"
 
-#ifndef __KERNEL__
-#include <stdint.h>
-#endif
-
 #define MC_ADMIN_DEVNODE	"mobicore"
 #define MC_USER_DEVNODE		"mobicore-user"
 
@@ -223,13 +219,15 @@ struct mc_ioctl_resolv_wsm {
 
 /*
  * Get the phys address & length of a allocated contiguous buffer.
- * Only available to the daemon */
+ * Only available to the daemon
+ */
 #define MC_IO_RESOLVE_CONT_WSM	_IOWR(MC_IOC_MAGIC, 16, \
 					struct mc_ioctl_resolv_cont_wsm)
 
 /*
  * Setup the mem traces when called.
- * Only available to the daemon */
+ * Only available to the daemon
+ */
 #define MC_IO_LOG_SETUP		_IO(MC_IOC_MAGIC, 17)
 
 #endif /* _MC_LINUX_H_ */

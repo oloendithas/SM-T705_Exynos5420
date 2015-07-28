@@ -65,6 +65,7 @@ static void log_eol(uint16_t source)
 {
 	if (!strnlen(log_line, LOG_LINE_SIZE))
 		return;
+
 	prev_eol = true;
 	/* MobiCore Userspace */
 	if (prev_source)
@@ -90,7 +91,6 @@ static void log_char(char ch, uint16_t source)
 
 	if (log_line_len >= LOG_LINE_SIZE - 1 || source != prev_source)
 		log_eol(source);
-
 
 	log_line[log_line_len] = ch;
 	log_line[log_line_len + 1] = 0;
@@ -209,12 +209,15 @@ static int log_worker(void *p)
 			goto err_kthread;
 		}
 	}
+
 err_kthread:
 	MCDRV_DBG(mcd, "Logging thread stopped!");
 	thread_err = ret;
-	/* Wait until the next kthread_stop() is called, if it was already
+	/*
+	 * Wait until the next kthread_stop() is called, if it was already
 	 * called we just slip through, if there is an error signal it and
-	 * wait to get the signal */
+	 * wait to get the signal
+	 */
 	set_current_state(TASK_INTERRUPTIBLE);
 	while (!kthread_should_stop()) {
 		schedule();
@@ -234,8 +237,10 @@ void mobicore_log_read(void)
 	if (log_thread == NULL || IS_ERR(log_thread))
 		return;
 
-	/* The thread itself is in some error condition so just get
-	 * rid of it */
+	/*
+	 * The thread itself is in some error condition so just get
+	 * rid of it
+	 */
 	if (thread_err != 0) {
 		kthread_stop(log_thread);
 		log_thread = NULL;
@@ -319,7 +324,7 @@ long mobicore_log_setup(void)
 
 	set_task_state(log_thread, TASK_INTERRUPTIBLE);
 
-	MCDRV_DBG(mcd, "fc_log Logger version %u", log_buf->version);
+	MCDRV_DBG(mcd, "fc_log Logger version %u\n", log_buf->version);
 	return 0;
 
 err_stop_kthread:

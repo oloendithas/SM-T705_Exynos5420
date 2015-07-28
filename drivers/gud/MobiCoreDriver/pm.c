@@ -29,12 +29,12 @@
 #include "debug.h"
 
 #ifdef MC_CRYPTO_CLOCK_MANAGEMENT
-	#include <linux/clk.h>
-	#include <linux/err.h>
+#include <linux/clk.h>
+#include <linux/err.h>
 
-	struct clk *mc_ce_iface_clk = NULL;
-	struct clk *mc_ce_core_clk = NULL;
-	struct clk *mc_ce_bus_clk = NULL;
+struct clk *mc_ce_iface_clk;
+struct clk *mc_ce_core_clk;
+struct clk *mc_ce_bus_clk;
 #endif /* MC_CRYPTO_CLOCK_MANAGEMENT */
 
 #ifdef MC_PM_RUNTIME
@@ -67,8 +67,8 @@ static inline void dump_sleep_params(struct mc_flags *flags)
 	MCDRV_DBG(mcd, "MobiCore IDLE=%d!", flags->schedule);
 	MCDRV_DBG(mcd,
 		  "MobiCore Request Sleep=%d!", flags->sleep_mode.SleepReq);
-	MCDRV_DBG(mcd,
-		  "MobiCore Sleep Ready=%d!", flags->sleep_mode.ReadyToSleep);
+	MCDRV_DBG(mcd, "MobiCore Sleep Ready=%d!",
+		  flags->sleep_mode.ReadyToSleep);
 }
 
 static int mc_suspend_notifier(struct notifier_block *nb,
@@ -135,7 +135,7 @@ static int bL_switcher_notifier_handler(struct notifier_block *this,
 	asm volatile ("mrc\tp15, 0, %0, c0, c0, 5" : "=r" (mpidr));
 	cpu = mpidr & 0x3;
 	cluster = (mpidr >> 8) & 0xf;
-	MCDRV_DBG(mcd, "%s switching!!, cpu: %u, Out=%u",
+	MCDRV_DBG(mcd, "%s switching!!, cpu: %u, Out=%u\n",
 		  (event == SWITCH_ENTER ? "Before" : "After"), cpu, cluster);
 
 	if (cpu != 0)
@@ -146,12 +146,14 @@ static int bL_switcher_notifier_handler(struct notifier_block *this,
 		if (!sleep_ready()) {
 			ctx->mcp->flags.sleep_mode.SleepReq = REQ_TO_SLEEP;
 			_nsiq();
-			/* By this time we should be ready for sleep or we are
-			 * in the middle of something important */
+			/*
+			 * By this time we should be ready for sleep or we are
+			 * in the middle of something important
+			 */
 			if (!sleep_ready()) {
 				dump_sleep_params(&mcp->flags);
 				MCDRV_DBG(mcd,
-					  "MobiCore: Don't allow switch!");
+					  "MobiCore: Don't allow switch!\n");
 				ctx->mcp->flags.sleep_mode.SleepReq = 0;
 				return -EPERM;
 			}
@@ -161,7 +163,7 @@ static int bL_switcher_notifier_handler(struct notifier_block *this,
 			ctx->mcp->flags.sleep_mode.SleepReq = 0;
 			break;
 	default:
-		MCDRV_DBG(mcd, "MobiCore: Unknown switch event!");
+		MCDRV_DBG(mcd, "MobiCore: Unknown switch event!\n");
 	}
 
 	return 0;
@@ -180,11 +182,11 @@ int mc_pm_initialize(struct mc_context *context)
 
 	ret = register_pm_notifier(&mc_notif_block);
 	if (ret)
-		MCDRV_DBG_ERROR(mcd, "device pm register failed");
+		MCDRV_DBG_ERROR(mcd, "device pm register failed\n");
 #ifdef MC_BL_NOTIFIER
 	if (register_bL_swicher_notifier(&switcher_nb))
 		MCDRV_DBG_ERROR(mcd,
-				"Failed to register to bL_switcher_notifier");
+				"Failed to register to bL_switcher_notifier\n");
 #endif
 
 	return ret;
@@ -194,11 +196,11 @@ int mc_pm_free(void)
 {
 	int ret = unregister_pm_notifier(&mc_notif_block);
 	if (ret)
-		MCDRV_DBG_ERROR(mcd, "device pm unregister failed");
+		MCDRV_DBG_ERROR(mcd, "device pm unregister failed\n");
 #ifdef MC_BL_NOTIFIER
 	ret = unregister_bL_swicher_notifier(&switcher_nb);
 	if (ret)
-		MCDRV_DBG_ERROR(mcd, "device bl unregister failed");
+		MCDRV_DBG_ERROR(mcd, "device bl unregister failed\n");
 #endif
 	return ret;
 }
@@ -215,7 +217,7 @@ int mc_pm_clock_initialize(void)
 	mc_ce_core_clk = clk_get(mcd, "core_clk");
 	if (IS_ERR(mc_ce_core_clk)) {
 		ret = PTR_ERR(mc_ce_core_clk);
-		MCDRV_DBG_ERROR(mcd, "cannot get core clock");
+		MCDRV_DBG_ERROR(mcd, "cannot get core clock\n");
 		goto error;
 	}
 	/* Get Interface clk */
@@ -223,7 +225,7 @@ int mc_pm_clock_initialize(void)
 	if (IS_ERR(mc_ce_iface_clk)) {
 		clk_put(mc_ce_core_clk);
 		ret = PTR_ERR(mc_ce_iface_clk);
-		MCDRV_DBG_ERROR(mcd, "cannot get iface clock");
+		MCDRV_DBG_ERROR(mcd, "cannot get iface clock\n");
 		goto error;
 	}
 	/* Get AXI clk */
@@ -232,7 +234,7 @@ int mc_pm_clock_initialize(void)
 		clk_put(mc_ce_iface_clk);
 		clk_put(mc_ce_core_clk);
 		ret = PTR_ERR(mc_ce_bus_clk);
-		MCDRV_DBG_ERROR(mcd, "cannot get AXI bus clock");
+		MCDRV_DBG_ERROR(mcd, "cannot get AXI bus clock\n");
 		goto error;
 	}
 	return ret;
@@ -263,17 +265,17 @@ int mc_pm_clock_enable(void)
 
 	rc = clk_prepare_enable(mc_ce_core_clk);
 	if (rc) {
-		MCDRV_DBG_ERROR(mcd, "cannot enable clock");
+		MCDRV_DBG_ERROR(mcd, "cannot enable clock\n");
 	} else {
 		rc = clk_prepare_enable(mc_ce_iface_clk);
 		if (rc) {
 			clk_disable_unprepare(mc_ce_core_clk);
-			MCDRV_DBG_ERROR(mcd, "cannot enable clock");
+			MCDRV_DBG_ERROR(mcd, "cannot enable clock\n");
 		} else {
 			rc = clk_prepare_enable(mc_ce_bus_clk);
 			if (rc) {
 				clk_disable_unprepare(mc_ce_iface_clk);
-				MCDRV_DBG_ERROR(mcd, "cannot enable clock");
+				MCDRV_DBG_ERROR(mcd, "cannot enable clock\n");
 			}
 		}
 	}
